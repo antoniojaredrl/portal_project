@@ -1,0 +1,40 @@
+# -*- coding: utf-8 -*-
+{
+    'name': 'Portal Control de Obra',
+    'version': '17.0.1.0.7',
+    'category': 'Project',
+    'summary': 'Portal de clientes para consultar avances y costos de tareas de control de obra',
+    'author': 'Antonio J.',
+    'license': 'LGPL-3',
+    'depends': [
+        'portal',
+        'mail',
+        'sale',
+        'purchase',
+        'stock',
+        'hr',
+        'hr_expense',
+        'project_modificaciones',
+        'project_open_book',
+    ],
+    'data': [
+        'security/ir.model.access.csv',
+        'security/project_invited_visibility_rules.xml',
+        'data/cleanup.xml',
+        'reports/portal_project_reports.xml',
+        'views/ir_attachment_views.xml',
+        'views/pending_service_planning_views.xml',
+        'views/pending_service_planning_import_views.xml',
+        'views/portal_project_user_map_views.xml',
+        'views/product_template_views.xml',
+        'views/portal_project_templates.xml',
+    ],
+    'assets': {
+        'web.assets_frontend': [
+            'portal_project/static/src/css/portal_project.css',
+        ],
+    },
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}

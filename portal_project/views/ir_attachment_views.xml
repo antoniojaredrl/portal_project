@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_attachment_form_inherit_portal_project" model="ir.ui.view">
+        <field name="name">ir.attachment.form.inherit.portal.project</field>
+        <field name="model">ir.attachment</field>
+        <field name="inherit_id" ref="base.view_attachment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="inside">
+                <group string="Control de Obra" groups="project.group_project_manager">
+                    <field name="portal_project_visible"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_attachment_tree_inherit_portal_project" model="ir.ui.view">
+        <field name="name">ir.attachment.tree.inherit.portal.project</field>
+        <field name="model">ir.attachment</field>
+        <field name="inherit_id" ref="base.view_attachment_tree"/>
+        <field name="arch" type="xml">
+            <field name="type" position="after">
+                <field name="portal_project_visible" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_attachment_search_inherit_portal_project" model="ir.ui.view">
+        <field name="name">ir.attachment.search.inherit.portal.project</field>
+        <field name="model">ir.attachment</field>
+        <field name="inherit_id" ref="base.view_attachment_search"/>
+        <field name="arch" type="xml">
+            <filter name="binary_filter" position="after">
+                <filter name="portal_project_visible"
+                        string="Visible en portal Control de Obra"
+                        domain="[('portal_project_visible', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

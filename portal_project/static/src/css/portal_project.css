@@ -1,0 +1,1258 @@
+.o_portal_docs .o_portal_index_card .o_portal_icon:has(img[src*="/portal_project/"]) {
+    width: 62px !important;
+    min-width: 62px !important;
+    height: 62px !important;
+    overflow: hidden;
+}
+
+.o_portal_docs .o_portal_index_card .o_portal_icon img[src*="/portal_project/"] {
+    width: 62px !important;
+    height: 62px !important;
+    max-width: 62px !important;
+    max-height: 62px !important;
+    object-fit: contain;
+    display: block;
+}
+
+.portal-project {
+    --pp-bg: #f6f5f4;
+    --pp-surface: #ffffff;
+    --pp-border: #d7d4d1;
+    --pp-border-soft: #ebe8e5;
+    --pp-text: #20242b;
+    --pp-muted: #6f6e6b;
+    --pp-primary: #813f32;
+    --pp-primary-dark: #5f2c24;
+    --pp-primary-soft: #f4ebe8;
+    --pp-accent: #113167;
+    --pp-accent-soft: #e8edf7;
+    --pp-clay: #881d04;
+    --pp-stone: #91908e;
+    --pp-row-hover: #f7f2f0;
+    color: var(--pp-text);
+}
+
+.portal-project-title {
+    color: var(--pp-text) !important;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.portal-project-list>.portal-project-title,
+.portal-project-task .portal-project-card-header .portal-project-title,
+.portal-project-record>.d-flex .portal-project-title {
+    color: var(--pp-primary-dark) !important;
+}
+
+.portal-project-card,
+.portal-project-panel,
+.portal-project-summary {
+    background: var(--pp-surface) !important;
+    border: 1px solid var(--pp-border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 28px rgba(17, 49, 103, 0.08);
+}
+
+.portal-project-card-header {
+    background: #f9f8f7 !important;
+    border-bottom: 1px solid var(--pp-border-soft) !important;
+}
+
+.portal-project-card-header,
+.portal-project-panel {
+    border-top: 3px solid var(--pp-primary) !important;
+}
+
+.portal-project-summary {
+    box-shadow: none;
+}
+
+.portal-project-summary small,
+.portal-project .text-muted,
+.portal-project .text-600 {
+    color: var(--pp-muted) !important;
+}
+
+.portal-project-summary strong {
+    color: var(--pp-text);
+}
+
+.portal-project-form-section {
+    background: #fbfaf9;
+    border: 1px solid var(--pp-border-soft);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.portal-project-info-list {
+    display: grid;
+    gap: 0.8rem 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.portal-project-info-row {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.portal-project-info-label {
+    color: var(--pp-clay);
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.portal-project-info-value {
+    color: var(--pp-text);
+    font-size: 0.94rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.portal-project-progress {
+    min-width: 0;
+}
+
+.portal-project-progress-track {
+    width: 100%;
+    height: 14px;
+    overflow: hidden;
+    background: #ece8e4;
+    border: 1px solid var(--pp-border);
+    border-radius: 999px;
+}
+
+.portal-project-progress-bar {
+    min-width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #16803c 0%, #31a95b 100%);
+    border-radius: inherit;
+}
+
+.portal-project-collapse-toggle {
+    color: var(--pp-text) !important;
+    font-size: 1.05rem;
+    font-weight: 800;
+    text-decoration: none !important;
+}
+
+.portal-project-collapse-toggle::before {
+    color: var(--pp-accent);
+    content: "+";
+    display: inline-block;
+    font-weight: 900;
+    margin-right: 0.45rem;
+}
+
+.portal-project-collapse-toggle[aria-expanded="true"]::before {
+    content: "-";
+}
+
+.portal-project-summary-strong {
+    border-color: rgba(136, 29, 4, 0.25) !important;
+    background: var(--pp-accent-soft) !important;
+}
+
+.portal-project-link {
+    color: var(--pp-primary) !important;
+    font-weight: 700;
+    text-decoration: none !important;
+}
+
+.portal-project-link:hover {
+    color: var(--pp-primary-dark) !important;
+    text-decoration: underline !important;
+}
+
+.portal-project-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 24px;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--pp-primary) !important;
+    color: #fff !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.portal-project-badge-lg {
+    min-height: 32px;
+    padding: 0.35rem 0.75rem;
+}
+
+.portal-project-badge-soft {
+    background: var(--pp-primary-soft) !important;
+    color: var(--pp-primary-dark) !important;
+    border: 1px solid rgba(17, 49, 103, 0.24);
+}
+
+.portal-project-badge-muted {
+    background: #f0efed !important;
+    color: #5c5b58 !important;
+    border: 1px solid var(--pp-border);
+}
+
+.portal-project-alert-badge {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+    padding: 0.28rem 0.6rem;
+    font-size: 0.72rem;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+
+.portal-project-filter-clear {
+    color: var(--pp-muted) !important;
+    font-weight: 700;
+    text-decoration: none !important;
+}
+
+.portal-project-filter-clear:hover {
+    color: var(--pp-primary-dark) !important;
+    text-decoration: underline !important;
+}
+
+.portal-project-filter-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.5rem auto;
+    padding: 0.45rem 0.7rem;
+    width: fit-content;
+    max-width: 100%;
+    border: 1px solid rgba(17, 49, 103, 0.16);
+    border-left: 3px solid var(--pp-accent);
+    border-radius: 6px;
+    background: #f7f9fc;
+    color: var(--pp-text);
+    font-size: 0.78rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.portal-project-filter-summary strong {
+    color: var(--pp-accent);
+}
+
+.portal-project-filter-summary-separator {
+    color: var(--pp-muted);
+    margin: 0 0.35rem;
+}
+
+.portal-project-table {
+    color: var(--pp-text);
+}
+
+.portal-project-table thead th {
+    background: var(--pp-primary) !important;
+    border-bottom: 1px solid var(--pp-border) !important;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.portal-project-sort-link {
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+.portal-project-sort-link:hover {
+    color: #f3d7cf !important;
+    text-decoration: underline !important;
+}
+
+.portal-project-sort-link span {
+    display: inline-block;
+    margin-left: 4px;
+    color: #f3d7cf;
+    font-size: 0.68rem;
+}
+
+.portal-project-table tbody td,
+.portal-project-table tbody th {
+    border-color: var(--pp-border-soft) !important;
+    vertical-align: middle;
+}
+
+.portal-project-table.table-hover tbody tr:hover>* {
+    background: var(--pp-row-hover) !important;
+}
+
+.portal-project-table-footer {
+    background: var(--pp-surface);
+    border: 1px solid var(--pp-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+    padding: 0.9rem 1rem;
+}
+
+.portal-project-page-size {
+    color: var(--pp-text);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.portal-project-page-size-label {
+    color: var(--pp-muted);
+    white-space: nowrap;
+}
+
+.portal-project-record-count {
+    color: var(--pp-muted);
+    font-size: 0.94rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.portal-project-record-count strong {
+    color: var(--pp-primary-dark);
+    font-weight: 800;
+}
+
+.portal-project-page-size-select {
+    min-width: 92px;
+    height: 42px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--pp-primary-dark) !important;
+    background-color: #fbfaf9 !important;
+    border-color: rgba(17, 49, 103, 0.3) !important;
+}
+
+.portal-project-pager .pagination {
+    margin-bottom: 0;
+}
+
+.portal-project-conversation {
+    box-shadow: none;
+}
+
+.portal-project-message-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.portal-project-message {
+    background: #fbfaf9;
+    border: 1px solid var(--pp-border-soft);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+}
+
+.portal-project-message-body {
+    color: var(--pp-text);
+    line-height: 1.45;
+}
+
+.portal-project-message-body p:last-child {
+    margin-bottom: 0;
+}
+
+.portal-project-approval-card {
+    background: #fbfaf9;
+    border: 1px solid var(--pp-border-soft);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.portal-project-approval-card-approved {
+    background: linear-gradient(180deg, #fbfaf9 0%, var(--pp-primary-soft) 100%);
+    border-color: rgba(129, 63, 50, 0.28);
+}
+
+.portal-project-approval-label {
+    color: var(--pp-primary-dark);
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.portal-project-approval-meta {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 0.85rem;
+}
+
+.portal-project-approval-meta div {
+    display: grid;
+    gap: 0.1rem;
+}
+
+.portal-project-approval-meta span {
+    color: var(--pp-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.portal-project-approval-meta strong {
+    color: var(--pp-text);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.portal-project-group-row td {
+    background: var(--pp-accent-soft) !important;
+    border-top: 1px solid rgba(136, 29, 4, 0.18) !important;
+    border-bottom: 1px solid rgba(136, 29, 4, 0.18) !important;
+}
+
+.portal-project-group-title {
+    color: var(--pp-accent);
+    font-weight: 800;
+}
+
+.portal-project-group-count {
+    display: inline-block;
+    margin-left: 0.5rem;
+    color: var(--pp-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.portal-project-detail-table tbody th {
+    background: #f7f6f5 !important;
+    color: var(--pp-muted) !important;
+    font-weight: 700;
+}
+
+.portal-project-tabs {
+    border-bottom: 1px solid var(--pp-border) !important;
+    gap: 4px;
+}
+
+.portal-project-tabs .nav-link {
+    border: 1px solid transparent !important;
+    border-radius: 8px 8px 0 0 !important;
+    color: var(--pp-muted) !important;
+    font-weight: 700;
+}
+
+.portal-project-tabs .nav-link.active {
+    background: var(--pp-surface) !important;
+    border-color: var(--pp-border) var(--pp-border) var(--pp-surface) !important;
+    color: var(--pp-accent) !important;
+    box-shadow: inset 0 3px 0 var(--pp-accent);
+}
+
+.portal-project-tab-content {
+    background: var(--pp-surface) !important;
+    border: 1px solid var(--pp-border) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 8px 8px !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.portal-project-btn {
+    background: var(--pp-primary) !important;
+    border-color: var(--pp-primary) !important;
+    color: #fff !important;
+    font-weight: 700;
+}
+
+.portal-project-btn:hover {
+    background: var(--pp-primary-dark) !important;
+    border-color: var(--pp-primary-dark) !important;
+}
+
+.portal-project .form-control,
+.portal-project .form-select,
+.portal-project .input-group-text {
+    border-color: var(--pp-border) !important;
+}
+
+.portal-project .list-group-item {
+    border-color: var(--pp-border-soft) !important;
+}
+
+.portal-project-kanban-board {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(5, minmax(340px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 0.75rem;
+}
+
+.portal-project-kanban-column {
+    min-width: 340px;
+    background: #f9f8f7;
+    border: 1px solid var(--pp-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.portal-project-kanban-column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 54px;
+    padding: 0.85rem;
+    border-bottom: 1px solid var(--pp-border-soft);
+}
+
+.portal-project-kanban-column-header h5 {
+    color: var(--pp-primary-dark);
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+.portal-project-kanban-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--pp-stone);
+    flex: 0 0 auto;
+}
+
+.portal-project-kanban-column-planeacion .portal-project-kanban-dot {
+    background: #64748b;
+}
+
+.portal-project-kanban-column-programadas .portal-project-kanban-dot {
+    background: #2563eb;
+}
+
+.portal-project-kanban-column-ejecucion .portal-project-kanban-dot {
+    background: #d97706;
+}
+
+.portal-project-kanban-column-validacion .portal-project-kanban-dot {
+    background: #7c3aed;
+}
+
+.portal-project-kanban-column-cerradas .portal-project-kanban-dot {
+    background: #059669;
+}
+
+.portal-project-kanban-count {
+    min-width: 30px;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid var(--pp-border);
+    color: var(--pp-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: center;
+}
+
+.portal-project-kanban-column-body {
+    display: grid;
+    gap: 0.75rem;
+    max-height: 72vh;
+    overflow-y: auto;
+    padding: 0.75rem;
+}
+
+.portal-project-kanban-card {
+    display: block;
+    color: var(--pp-text) !important;
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-top: 4px solid #f0df43;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(17, 49, 103, 0.06);
+    overflow: hidden;
+    padding: 0;
+    text-decoration: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.portal-project-kanban-card-sale {
+    border-top-color: #0d6efd;
+}
+
+.portal-project-kanban-card-late {
+    border-color: #b33d22;
+    border-width: 2px;
+    border-top-width: 4px;
+}
+
+.portal-project-kanban-card:hover {
+    border-color: rgba(129, 63, 50, 0.45);
+    box-shadow: 0 10px 22px rgba(17, 49, 103, 0.1);
+    transform: translateY(-2px);
+}
+
+.portal-project-kanban-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 42px;
+    padding: 0.35rem 0.45rem;
+    background: #e7f1ff;
+    border-bottom: 1px solid var(--pp-border-soft);
+}
+
+.portal-project-kanban-card-pending .portal-project-kanban-card-header {
+    background: #eaf7ef;
+}
+
+.portal-project-kanban-source-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    color: #ffffff;
+    flex: 0 0 auto;
+    font-size: 0.75rem;
+}
+
+.portal-project-kanban-source-sale {
+    background: #0d6efd;
+}
+
+.portal-project-kanban-source-pending {
+    background: #16803c;
+}
+
+.portal-project-kanban-title {
+    display: -webkit-box;
+    color: var(--pp-text);
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1.15;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.portal-project-kanban-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.28rem;
+    flex: 0 0 auto;
+}
+
+.portal-project-kanban-state {
+    color: var(--pp-text);
+    font-size: 0.68rem;
+    font-weight: 800;
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.portal-project-kanban-priority,
+.portal-project-kanban-no-date {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 18px;
+    padding: 0.08rem 0.42rem;
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.portal-project-kanban-priority-danger {
+    background: #dc3545;
+}
+
+.portal-project-kanban-priority-dark {
+    background: #212529;
+}
+
+.portal-project-kanban-no-date {
+    gap: 0.25rem;
+    background: #ffc107;
+    color: #2b2111;
+}
+
+.portal-project-kanban-traffic {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.22rem;
+    border-radius: 999px;
+    background: #343a40;
+}
+
+.portal-project-kanban-light {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #6c757d;
+    opacity: 0.28;
+}
+
+.portal-project-kanban-light.active {
+    opacity: 1;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+}
+
+.portal-project-kanban-light-red.active {
+    background: #dc3545;
+}
+
+.portal-project-kanban-light-amber.active {
+    background: #ffc107;
+}
+
+.portal-project-kanban-light-green.active {
+    background: #198754;
+}
+
+.portal-project-kanban-strip,
+.portal-project-kanban-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+    min-height: 30px;
+    padding: 0.28rem 0.45rem;
+    border-bottom: 1px solid var(--pp-border-soft);
+    color: var(--pp-muted);
+    font-size: 0.66rem;
+    line-height: 1.2;
+}
+
+.portal-project-kanban-strip>div,
+.portal-project-kanban-footer>div {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.portal-project-kanban-strip strong,
+.portal-project-kanban-footer strong {
+    color: var(--pp-text);
+    font-weight: 800;
+}
+
+.portal-project-kanban-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    border-bottom: 1px solid var(--pp-border-soft);
+}
+
+.portal-project-kanban-progress-stack {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.45rem;
+    border-right: 1px solid var(--pp-border-soft);
+}
+
+.portal-project-kanban-section-label {
+    color: var(--pp-muted);
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.portal-project-kanban-progress-row {
+    display: grid;
+    gap: 0.18rem;
+}
+
+.portal-project-kanban-progress-row>div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    color: var(--pp-muted);
+    font-size: 0.66rem;
+}
+
+.portal-project-kanban-progress-row strong {
+    color: var(--pp-text);
+    font-weight: 800;
+}
+
+.portal-project-kanban-progress-track {
+    width: 100%;
+    height: 5px;
+    overflow: hidden;
+    background: #ece8e4;
+    border-radius: 999px;
+}
+
+.portal-project-kanban-progress-bar {
+    height: 100%;
+    min-width: 0;
+    border-radius: inherit;
+}
+
+.portal-project-kanban-progress-planned,
+.portal-project-kanban-progress-billed,
+.portal-project-kanban-progress-green {
+    background: #198754;
+}
+
+.portal-project-kanban-progress-red {
+    background: #dc3545;
+}
+
+.portal-project-kanban-progress-amber {
+    background: #ffc107;
+}
+
+.portal-project-kanban-progress-no_date {
+    background: #6c757d;
+}
+
+.portal-project-kanban-fields {
+    display: grid;
+    align-content: space-between;
+    gap: 0.35rem;
+    padding: 0.45rem;
+    margin-top: 0;
+}
+
+.portal-project-kanban-fields div {
+    display: grid;
+    gap: 0.05rem;
+}
+
+.portal-project-kanban-fields span {
+    color: var(--pp-muted);
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.portal-project-kanban-fields strong {
+    color: var(--pp-text);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+}
+
+.portal-project-kanban-empty {
+    min-height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pp-muted);
+    border: 1px dashed var(--pp-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.55);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+@media (max-width: 767.98px) {
+    .portal-project-tab-content {
+        padding: 1rem !important;
+    }
+
+    .portal-project-table thead th {
+        font-size: 0.72rem;
+    }
+
+    .portal-project-detail-table tbody th {
+        min-width: 160px;
+    }
+
+    .portal-project-info-list {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-project-kanban-board {
+        grid-template-columns: minmax(320px, 88vw);
+    }
+
+    .portal-project-kanban-column-body {
+        max-height: none;
+    }
+}
+
+/* Custom Dashboard Styles */
+.portal-project .kpi-card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.portal-project .kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(17, 49, 103, 0.12) !important;
+}
+
+.portal-project .kpi-icon-wrapper {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.portal-project .kpi-card:hover .kpi-icon-wrapper {
+    transform: scale(1.15) rotate(5deg);
+}
+
+.portal-project .chart-card {
+    background: var(--pp-surface);
+    border: 1px solid var(--pp-border);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(17, 49, 103, 0.04);
+}
+
+.portal-project-chart-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+.portal-project-chart-frame canvas {
+    opacity: 0;
+    transform: scale(0.98);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.portal-project-chart-frame.is-loaded canvas {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.portal-project-chart-loader {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    overflow: hidden;
+    background:
+        linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 248, 247, 0.9));
+    background-size: 44% 100%, 100% 100%;
+    color: var(--pp-muted);
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    animation: portal-project-chart-shimmer 1.25s ease-in-out infinite;
+}
+
+.portal-project-chart-loader::before {
+    content: "";
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: 18%;
+    height: 42%;
+    border-bottom: 1px solid rgba(129, 63, 50, 0.2);
+    border-left: 1px solid rgba(129, 63, 50, 0.14);
+    background:
+        linear-gradient(to top, rgba(129, 63, 50, 0.2) 0 48%, transparent 48%) 6% 100% / 9% 72% no-repeat,
+        linear-gradient(to top, rgba(17, 49, 103, 0.18) 0 62%, transparent 62%) 23% 100% / 9% 72% no-repeat,
+        linear-gradient(to top, rgba(129, 63, 50, 0.18) 0 38%, transparent 38%) 40% 100% / 9% 72% no-repeat,
+        linear-gradient(to top, rgba(17, 49, 103, 0.16) 0 78%, transparent 78%) 57% 100% / 9% 72% no-repeat,
+        linear-gradient(to top, rgba(129, 63, 50, 0.16) 0 54%, transparent 54%) 74% 100% / 9% 72% no-repeat,
+        linear-gradient(to top, rgba(17, 49, 103, 0.14) 0 68%, transparent 68%) 91% 100% / 9% 72% no-repeat;
+    opacity: 0.95;
+    animation: portal-project-chart-bars 1.05s ease-in-out infinite alternate;
+}
+
+.portal-project-chart-loader::after {
+    content: "";
+    position: absolute;
+    left: 13%;
+    right: 13%;
+    bottom: 22%;
+    height: 38%;
+    background:
+        linear-gradient(135deg, transparent 0 17%, rgba(129, 63, 50, 0.26) 17% 19%, transparent 19% 35%, rgba(17, 49, 103, 0.24) 35% 37%, transparent 37% 55%, rgba(129, 63, 50, 0.22) 55% 57%, transparent 57%);
+    opacity: 0.75;
+    animation: portal-project-chart-line 1.35s ease-in-out infinite alternate;
+}
+
+.portal-project-chart-loader.is-loaded {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.portal-project-chart-spinner {
+    position: relative;
+    z-index: 1;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 3px solid rgba(129, 63, 50, 0.16);
+    border-top-color: var(--pp-primary);
+    border-radius: 50%;
+    box-shadow: 0 8px 18px rgba(17, 49, 103, 0.08);
+    animation: portal-project-chart-spin 0.8s linear infinite, portal-project-chart-pulse 1.2s ease-in-out infinite;
+}
+
+.portal-project-chart-loader-text {
+    position: relative;
+    z-index: 1;
+    padding: 0.28rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 6px 16px rgba(17, 49, 103, 0.06);
+    color: var(--pp-primary-dark);
+    letter-spacing: 0;
+}
+
+@keyframes portal-project-chart-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes portal-project-chart-shimmer {
+    0% {
+        background-position: -65% 0, 0 0;
+    }
+
+    100% {
+        background-position: 165% 0, 0 0;
+    }
+}
+
+@keyframes portal-project-chart-bars {
+    0% {
+        transform: translateY(6px);
+        opacity: 0.72;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes portal-project-chart-line {
+    0% {
+        transform: translateY(4px) scaleX(0.96);
+        opacity: 0.42;
+    }
+
+    100% {
+        transform: translateY(0) scaleX(1);
+        opacity: 0.82;
+    }
+}
+
+@keyframes portal-project-chart-pulse {
+    0%,
+    100% {
+        box-shadow: 0 8px 18px rgba(17, 49, 103, 0.08), 0 0 0 0 rgba(129, 63, 50, 0.18);
+    }
+
+    50% {
+        box-shadow: 0 10px 22px rgba(17, 49, 103, 0.12), 0 0 0 8px rgba(129, 63, 50, 0);
+    }
+}
+
+.portal-project-tabs .nav-link {
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.portal-project-panel {
+    border-radius: 8px !important;
+}
+
+.sla-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sla-list::-webkit-scrollbar-track {
+    background: #fbfaf9;
+    border-radius: 99px;
+}
+
+.sla-list::-webkit-scrollbar-thumb {
+    background: var(--pp-border);
+    border-radius: 99px;
+}
+
+.sla-list::-webkit-scrollbar-thumb:hover {
+    background: var(--pp-stone);
+}
+
+/* Gantt Custom Styles */
+.gantt-container-wrapper {
+    background: #ffffff;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.gantt .grid-header {
+    fill: #f9f8f7;
+    stroke: var(--pp-border-soft);
+}
+
+.gantt .grid-row {
+    fill: #ffffff;
+}
+
+.gantt .grid-row:nth-child(even) {
+    fill: #fbfaf9;
+}
+
+.gantt .tick {
+    stroke: var(--pp-border-soft);
+}
+
+.gantt .tick.thick {
+    stroke: var(--pp-border);
+}
+
+.gantt .bar {
+    fill: #dbeafe !important;
+    stroke: #000000 !important;
+    stroke-width: 0.5;
+    rx: 6px;
+    ry: 6px;
+    cursor: pointer;
+}
+
+.gantt .bar-progress {
+    fill: #16a34a !important;
+    /* Nice green for progress */
+    rx: 6px;
+    ry: 6px;
+}
+
+.gantt .bar-label {
+    display: none !important;
+}
+
+.gantt .bar-wrapper:hover .bar {
+    fill: #bfdbfe !important;
+    stroke: #1d4ed8 !important;
+}
+
+/* Customizing frappe-gantt tooltip */
+.gantt-container .popup-wrapper {
+    background: #ffffff !important;
+    border: 1px solid var(--pp-border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 25px rgba(17, 49, 103, 0.12) !important;
+    padding: 12px !important;
+    color: var(--pp-text) !important;
+}
+
+.gantt-container .popup-wrapper .title {
+    font-weight: 800 !important;
+    color: var(--pp-primary-dark) !important;
+    margin-bottom: 6px !important;
+    font-size: 13px !important;
+    border-bottom: 0 !important;
+}
+
+.gantt-container .popup-wrapper .subtitle {
+    color: var(--pp-muted) !important;
+    font-size: 11px !important;
+}
+
+/* Nav Pills style for taskViewTabs */
+#taskViewTabs .nav-link {
+    color: var(--pp-muted) !important;
+    transition: all 0.2s ease;
+}
+
+#taskViewTabs .nav-link.active {
+    background-color: var(--pp-surface) !important;
+    color: var(--pp-primary-dark) !important;
+    box-shadow: 0 4px 12px rgba(17, 49, 103, 0.06);
+    border: 1px solid var(--pp-border) !important;
+}
+
+/* Custom styling for status-colored Gantt bars (Pastel theme matching the Odoo dashboard) */
+
+/* 1. Planeación (Slate/Grey) */
+.gantt .gantt-bar-planeacion .bar {
+    fill: #f1f5f9 !important;
+    stroke: #cbd5e1 !important;
+    stroke-width: 1px;
+}
+.gantt .gantt-bar-planeacion .bar-progress {
+    fill: #94a3b8 !important;
+}
+
+/* 2. Programadas (Blue) */
+.gantt .gantt-bar-programadas .bar {
+    fill: #eff6ff !important;
+    stroke: #bfdbfe !important;
+    stroke-width: 1px;
+}
+.gantt .gantt-bar-programadas .bar-progress {
+    fill: #3b82f6 !important;
+}
+
+/* 3. Ejecución (Amber/Yellow) */
+.gantt .gantt-bar-ejecucion .bar {
+    fill: #fffbeb !important;
+    stroke: #fde68a !important;
+    stroke-width: 1px;
+}
+.gantt .gantt-bar-ejecucion .bar-progress {
+    fill: #f59e0b !important;
+}
+
+/* 4. Validación (Purple) */
+.gantt .gantt-bar-validacion .bar {
+    fill: #faf5ff !important;
+    stroke: #e9d5ff !important;
+    stroke-width: 1px;
+}
+.gantt .gantt-bar-validacion .bar-progress {
+    fill: #a855f7 !important;
+}
+
+/* 5. Cerradas (Green) */
+.gantt .gantt-bar-cerradas .bar {
+    fill: #f0fdf4 !important;
+    stroke: #bbf7d0 !important;
+    stroke-width: 1px;
+}
+.gantt .gantt-bar-cerradas .bar-progress {
+    fill: #10b981 !important;
+}
+
+/* Legend indicator box styles */
+.gantt-legend-color-box {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    vertical-align: middle;
+}
+.bg-gantt-planeacion { background-color: #94a3b8; }
+.bg-gantt-programadas { background-color: #3b82f6; }
+.bg-gantt-ejecucion { background-color: #f59e0b; }
+.bg-gantt-validacion { background-color: #a855f7; }
+.bg-gantt-cerradas { background-color: #10b981; }
+
+/* Enhanced Gantt Tooltip styling overrides */
+.gantt-container .popup-wrapper {
+    max-width: 280px !important;
+    font-family: inherit !important;
+}
+
+/* Gantt Sidebar rows and responsive styling */
+.gantt-sidebar-row:hover {
+    background-color: #f8fafc !important;
+    color: var(--pp-primary) !important;
+}
+
+@media (max-width: 767.98px) {
+    .gantt-tasks-sidebar {
+        display: none !important;
+    }
+}

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_portal_control_obra_task_pdf" model="ir.actions.report">
+        <field name="name">Control de Obra Portal</field>
+        <field name="model">project.task</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">portal_project.report_portal_control_obra_task_pdf</field>
+        <field name="report_file">portal_project.report_portal_control_obra_task_pdf</field>
+        <field name="print_report_name">'Control de Obra - %s' % (object.name or object.id)</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <template id="report_portal_control_obra_task_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="vals" t-value="values_by_task[o.id]"/>
+                <t t-call="web.external_layout">
+                    <style type="text/css">
+                        .pp-report-page { font-size: 9.5pt; color: #1f2933; line-height: 1.35; }
+                        .pp-report-header { border-bottom: 3px solid #115640; padding-bottom: 10px; margin-bottom: 12px; }
+                        .pp-report-eyebrow { color: #176f52; font-size: 8pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+                        .pp-report-title { font-size: 20pt; font-weight: 700; margin: 2px 0 4px; color: #111827; }
+                        .pp-report-muted { color: #64748b; }
+                        .pp-report-meta { width: 100%; border-collapse: collapse; margin-top: 8px; }
+                        .pp-report-meta td { padding: 3px 12px 3px 0; color: #334155; }
+                        .pp-report-meta-label { color: #64748b; font-size: 8pt; text-transform: uppercase; }
+                        .pp-report-kpis { width: 100%; border-collapse: separate; border-spacing: 7px; margin: 14px 0 8px; }
+                        .pp-report-kpi { border: 1px solid #d8dee6; border-radius: 7px; padding: 10px; width: 33%; background: #f8fafc; }
+                        .pp-report-kpi strong { display: block; font-size: 13.5pt; margin-top: 4px; color: #111827; }
+                        .pp-report-kpi.pp-report-kpi-main { background: #e7f4ee; border-color: #9bcbb9; }
+                        .pp-report-section { margin-top: 18px; font-size: 10.5pt; font-weight: 700; color: #115640; border-bottom: 2px solid #115640; padding-bottom: 4px; }
+                        .pp-report-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+                        .pp-report-table th { background: #eef3f7; color: #334155; font-size: 7.8pt; text-transform: uppercase; }
+                        .pp-report-table th, .pp-report-table td { border-bottom: 1px solid #e8edf2; padding: 6px; vertical-align: top; }
+                        .pp-report-table tr:nth-child(even) td { background: #fbfdff; }
+                        .pp-report-total td { background: #f1f8f5 !important; font-weight: 700; }
+                        .pp-report-right { text-align: right; }
+                        .pp-report-center { text-align: center; }
+                        .pp-report-chip { display: inline-block; padding: 2px 6px; border-radius: 10px; background: #eef2f7; color: #475569; font-size: 7.5pt; }
+                    </style>
+                    <div class="page pp-report-page">
+                        <div class="pp-report-header">
+                            <div class="pp-report-eyebrow">Reporte de transparencia de costos</div>
+                            <div class="pp-report-title">Control de Obra</div>
+                            <div class="pp-report-muted">
+                                <strong><t t-out="o.name"/></strong>
+                                <span t-if="o.project_id"> | <t t-out="o.project_id.name"/></span>
+                                <span t-if="o.sale_order_id"> | <t t-out="o.sale_order_id.name"/></span>
+                            </div>
+                            <table class="pp-report-meta">
+                                <tr>
+                                    <td t-if="o.partner_id">
+                                        <span class="pp-report-meta-label">Cliente</span><br/>
+                                        <t t-out="o.partner_id.name"/>
+                                    </td>
+                                    <td t-if="'supervisor_interno' in o._fields and o.supervisor_interno">
+                                        <span class="pp-report-meta-label">Supervisor Interno</span><br/>
+                                        <t t-out="o.supervisor_interno.name"/>
+                                    </td>
+                                    <td t-if="'supervisor_cliente' in o._fields and o.supervisor_cliente">
+                                        <span class="pp-report-meta-label">Supervisor Cliente</span><br/>
+                                        <t t-out="o.supervisor_cliente.name"/>
+                                    </td>
+                                    <td t-if="'planta_trabajo' in o._fields and o.planta_trabajo">
+                                        <span class="pp-report-meta-label">Planta</span><br/>
+                                        <t t-out="o.planta_trabajo.name"/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <table class="pp-report-kpis">
+                            <tr>
+                                <td class="pp-report-kpi">
+                                    <span class="pp-report-muted">Producción entregada</span>
+                                    <strong><t t-out="vals['delivered_total_text']"/></strong>
+                                </td>
+                                <td class="pp-report-kpi">
+                                    <span class="pp-report-muted">Total costos</span>
+                                    <strong><t t-out="vals['total_cost_text']"/></strong>
+                                </td>
+                                <td class="pp-report-kpi pp-report-kpi-main">
+                                    <span class="pp-report-muted">Total estimado a cobrar</span>
+                                    <strong><t t-out="vals['grand_total_text']"/></strong>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="pp-report-section">Resumen financiero</div>
+                        <table class="pp-report-table">
+                            <tbody>
+                                <tr><th>Concepto</th><th class="pp-report-right">Importe</th></tr>
+                                <tr><td>Producción entregada</td><td class="pp-report-right"><t t-out="vals['delivered_total_text']"/></td></tr>
+                                <tr><td>Gastos</td><td class="pp-report-right"><t t-out="vals['expense_total_text']"/></td></tr>
+                                <tr><td>Compras no consumidas por almacén</td><td class="pp-report-right"><t t-out="vals['purchase_total_text']"/></td></tr>
+                                <tr><td>Material consumido de almacén</td><td class="pp-report-right"><t t-out="vals['stock_total_text']"/></td></tr>
+                                <tr><td>Mano de obra</td><td class="pp-report-right"><t t-out="vals['labor_total_text']"/></td></tr>
+                                <tr class="pp-report-total"><td>Total costos</td><td class="pp-report-right"><t t-out="vals['total_cost_text']"/></td></tr>
+                                <tr><td>Base cobrable</td><td class="pp-report-right"><t t-out="vals['billable_base_total_text']"/></td></tr>
+                                <tr><td>Utilidad</td><td class="pp-report-right"><t t-out="'%.2f' % vals['profit_percentage']"/>% (<t t-out="vals['profit_amount_text']"/>)</td></tr>
+                                <tr class="pp-report-total"><td>Total estimado a cobrar</td><td class="pp-report-right"><t t-out="vals['grand_total_text']"/></td></tr>
+                            </tbody>
+                        </table>
+
+                        <div class="pp-report-section">Avances</div>
+                        <table class="pp-report-table">
+                            <thead>
+                                <tr><th>Fecha</th><th>Avance</th><th>Sup. Interno</th><th>Sup. Cliente</th><th class="pp-report-right">Unidades</th><th class="pp-report-right">Valor</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="not vals['advances']"><td colspan="6" class="pp-report-center pp-report-muted">Sin registros.</td></tr>
+                                <t t-foreach="vals['advances']" t-as="advance">
+                                    <tr>
+                                        <td><t t-out="advance.date" t-options='{"widget": "date"}'/></td>
+                                        <td><t t-out="advance.name or advance.display_name"/></td>
+                                        <td><t t-out="advance.responsible_id.name or '-'"/></td>
+                                        <td><t t-out="advance.supervisorplanta.name or '-'"/></td>
+                                        <td class="pp-report-right"><t t-out="advance.unit_progress or 0"/></td>
+                                        <td class="pp-report-right"><t t-out="vals['format_amount'](advance.sale_current, advance.currency_id or vals['currency'])"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div class="pp-report-section">Costos</div>
+                        <table class="pp-report-table">
+                            <tbody>
+                                <tr><th>Tipo</th><th>Referencia</th><th class="pp-report-right">Importe portal</th></tr>
+                                <t t-foreach="vals['approved_expenses']" t-as="expense">
+                                    <tr>
+                                        <td>Gasto</td>
+                                        <td><t t-out="expense.name"/></td>
+                                        <td class="pp-report-right"><t t-out="vals['format_amount'](expense.total_amount, expense.currency_id or vals['currency'])"/></td>
+                                    </tr>
+                                </t>
+                                <t t-foreach="vals['confirmed_purchase_lines']" t-as="line">
+                                    <t t-set="purchase_pricelist_amount" t-value="vals['purchase_line_pricelist_map'].get(line.id)"/>
+                                    <tr>
+                                        <td>Compra</td>
+                                        <td>
+                                            <t t-out="line.order_id.name"/> - <t t-out="line.product_id.display_name or line.name"/>
+                                            <span t-if="not vals['purchase_line_cost_map'].get(line.id)" class="pp-report-chip">Ya considerada en almacén</span>
+                                        </td>
+                                        <td class="pp-report-right">
+                                            <t t-if="vals['purchase_line_cost_map'].get(line.id) and purchase_pricelist_amount" t-out="purchase_pricelist_amount['subtotal_text']"/>
+                                            <t t-else="">-</t>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-foreach="vals['labor_lines']" t-as="labor">
+                                    <tr>
+                                        <td>Mano de obra</td>
+                                        <td><t t-out="labor.employee_id.name or labor.display_name"/></td>
+                                        <td class="pp-report-right"><t t-out="vals['format_amount'](vals['labor_pricelist_map'].get(labor.id, labor.total_cost), vals['currency'])"/></td>
+                                    </tr>
+                                </t>
+                                <t t-foreach="vals['stock_moves']" t-as="move">
+                                    <tr>
+                                        <td>Almacén</td>
+                                        <td><t t-out="move.reference or move.picking_id.name or move.name"/> - <t t-out="move.product_id.display_name"/></td>
+                                        <td class="pp-report-right"><t t-out="vals['format_amount']((move.price_unit or move.product_id.standard_price or 0.0) * (move.quantity or 0.0), vals['currency'])"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

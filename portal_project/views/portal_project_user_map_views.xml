@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="portal_project_user_map_view_tree" model="ir.ui.view">
+        <field name="name">portal.project.user.map.view.tree</field>
+        <field name="model">portal.project.user.map</field>
+        <field name="arch" type="xml">
+            <tree string="Mapeos Portal Control de Obra">
+                <field name="partner_id"/>
+                <field name="role"/>
+                <field name="portal_role"/>
+                <field name="follow_visibility_scope"/>
+                <field name="company_ids" widget="many2many_tags"/>
+                <field name="supervisor_interno_ids" widget="many2many_tags"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="portal_project_user_map_view_form" model="ir.ui.view">
+        <field name="name">portal.project.user.map.view.form</field>
+        <field name="model">portal.project.user.map</field>
+        <field name="arch" type="xml">
+            <form string="Mapeo Portal Control de Obra">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="partner_id" placeholder="Contacto portal"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="General">
+                            <field name="role"/>
+                            <field name="portal_role"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Visibilidad">
+                            <field name="follow_visibility_scope"/>
+                            <field name="company_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="supervisor_interno_ids" widget="many2many_tags"
+                                   options="{'no_create': True, 'no_edit': True}"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Notas internas de configuración"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="portal_project_user_map_action" model="ir.actions.act_window">
+        <field name="name">Mapeos Portal Control de Obra</field>
+        <field name="res_model">portal.project.user.map</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure qué contacto portal ve trabajos como Cliente / Responsable, Compras Cliente o Supervisor Cliente.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        name="Portal"
+        id="menu_proyecto_portal"
+        parent="project_modificaciones.menu_control_obra_root"
+        sequence="90"
+        groups="base.group_system"
+    />
+
+    <menuitem 
+        id="portal_project_user_map_menu"
+        name="Mapeos Portal Control de Obra"
+        parent="menu_proyecto_portal"
+        action="portal_project_user_map_action"
+        groups="base.group_system"
+        sequence="1" />
+</odoo>

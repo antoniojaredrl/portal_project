@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view_inherit_portal_movement_category" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.portal.movement.category</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <field name="categ_id" position="after">
+                <field name="portal_movement_category"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="product_category_form_view_inherit_portal_movement_category" model="ir.ui.view">
+        <field name="name">product.category.form.inherit.portal.movement.category</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <field name="parent_id" position="after">
+                <field name="portal_movement_category"/>
+            </field>
+        </field>
+    </record>
+</odoo>

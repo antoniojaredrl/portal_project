@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <delete model="ir.ui.view" search="[('key', 'in', [
+        'scaffolding_management.portal_my_work_tasks',
+        'scaffolding_management.portal_work_task_page',
+        'scaffolding_management.view_partner_form_inherit_scaffolding_profit'
+    ])]"/>
+</odoo>
