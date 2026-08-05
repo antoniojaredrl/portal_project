@@ -1,9 +1,18 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class PendingService(models.Model):
     _inherit = 'pending.service'
 
+    natura_servicio = fields.Selection(
+        selection=[
+            ('programado', 'Programado'),
+            ('urgencia', 'Urgencia'),
+        ],
+        string='Naturaleza del Servicio',
+        tracking=True,
+    )
     planned_material_ids = fields.One2many(
         'pending.service.planned.material',
         'service_id',
@@ -19,6 +28,43 @@ class PendingService(models.Model):
         'service_id',
         string='Servicios Externos',
     )
+
+
+class ProjectTask(models.Model):
+    _inherit = 'project.task'
+
+    planned_material_ids = fields.One2many(
+        related='servicio_pendiente.planned_material_ids',
+        string='Materiales Planeados',
+        readonly=False,
+    )
+    planned_labor_ids = fields.One2many(
+        related='servicio_pendiente.planned_labor_ids',
+        string='Mano de Obra Planeada',
+        readonly=False,
+    )
+    planned_service_ex_ids = fields.One2many(
+        related='servicio_pendiente.planned_service_ex_ids',
+        string='Servicios Externos',
+        readonly=False,
+    )
+
+    def _get_planning_service(self):
+        self.ensure_one()
+        if not self.servicio_pendiente:
+            raise UserError(_(
+                'La tarea debe estar relacionada con un servicio pendiente para administrar su planeación.'
+            ))
+        return self.servicio_pendiente
+
+    def action_download_planning_template(self):
+        return self._get_planning_service().action_download_planning_template()
+
+    def action_open_planning_import(self):
+        return self._get_planning_service().action_open_planning_import()
+
+    def action_clear_planning_import(self):
+        return self._get_planning_service().action_clear_planning_import()
 
 
 class PendingServicePlannedMaterial(models.Model):

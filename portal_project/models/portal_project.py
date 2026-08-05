@@ -382,6 +382,27 @@ class PortalProject(models.AbstractModel):
             return commercial_partner.property_product_pricelist
         return partner.property_product_pricelist
 
+    def _task_uses_open_book_costs(self, task):
+        return bool(
+            task
+            and 'is_open_book' in task.project_id._fields
+            and task.project_id.is_open_book
+        )
+
+    def _get_task_open_book_cost_lines(self, task, date_from=False, date_to=False):
+        """Return the MOB snapshots which are the source of truth for portal cost."""
+        if not self._task_uses_open_book_costs(task):
+            return self.env['project.open.book.activity.line']
+        domain = [
+            ('task_id', '=', task.id),
+            ('activity_id.state', '!=', 'cancelled'),
+        ]
+        if date_from:
+            domain.append(('date', '>=', date_from))
+        if date_to:
+            domain.append(('date', '<=', date_to))
+        return self.env['project.open.book.activity.line'].sudo().search(domain)
+
     def _get_pricelist_price(
         self, product, qty, partner=None, project=None, uom=None, date=None,
         fallback=0.0, require_rule=False,
@@ -422,6 +443,26 @@ class PortalProject(models.AbstractModel):
         sale_currency = project.currency_id or pricelist.currency_id or target_currency or purchase_currency
         purchase_unit = line.price_unit or 0.0
         purchase_subtotal = line.price_subtotal or (purchase_unit * (line.product_qty or 0.0))
+        if not self._task_uses_open_book_costs(line.task_id):
+            converted_subtotal = self._convert_amount(
+                purchase_subtotal, purchase_currency,
+                target_currency or purchase_currency,
+                line.company_id or line.order_id.company_id or self.env.company,
+                fields.Date.to_date(line.order_id.date_order or fields.Date.context_today(self)),
+            )
+            return {
+                'price_unit': purchase_unit,
+                'subtotal': purchase_subtotal,
+                'currency': purchase_currency,
+                'purchase_unit': purchase_unit,
+                'purchase_subtotal': purchase_subtotal,
+                'purchase_currency': purchase_currency,
+                'subtotal_converted': converted_subtotal,
+                'price_unit_text': self._format_amount(purchase_unit, purchase_currency),
+                'subtotal_text': self._format_amount(purchase_subtotal, purchase_currency),
+                'purchase_unit_text': self._format_amount(purchase_unit, purchase_currency),
+                'purchase_subtotal_text': self._format_amount(purchase_subtotal, purchase_currency),
+            }
         sale_unit = self._get_pricelist_price(
             line.product_id, line.product_qty, partner, project,
             line.product_uom, line.order_id.date_order, purchase_unit,
@@ -451,6 +492,18 @@ class PortalProject(models.AbstractModel):
         project = line.task_id.project_id
         pricelist = self._get_portal_pricelist(partner, project)
         purchase_currency = self._get_purchase_line_currency(line, self.env.company.currency_id)
+        if not self._task_uses_open_book_costs(line.task_id):
+            discount = line.discount if 'discount' in line._fields else 0.0
+            subtotal = (
+                (line.price_unit or 0.0)
+                * (1.0 - (discount or 0.0) / 100.0)
+                * (quantity if quantity is not None else (line.product_qty or 0.0))
+            )
+            return self._convert_amount(
+                subtotal, purchase_currency, target_currency or purchase_currency,
+                line.company_id or line.order_id.company_id or self.env.company,
+                fields.Date.to_date(line.order_id.date_order or fields.Date.context_today(self)),
+            )
         sale_currency = project.currency_id or pricelist.currency_id or target_currency or purchase_currency
         pricing_qty = line.product_qty or quantity or 0.0
         sale_unit = self._get_pricelist_price(
@@ -510,6 +563,26 @@ class PortalProject(models.AbstractModel):
         sale_unit = purchase_unit
         sale_subtotal = purchase_subtotal
         price_date = fields.Date.to_date(expense.date or fields.Date.context_today(self))
+        if not self._task_uses_open_book_costs(expense.task_id):
+            converted = self._convert_amount(
+                purchase_subtotal, expense_currency,
+                target_currency or expense_currency, company, price_date,
+            )
+            return {
+                'quantity': quantity,
+                'purchase_unit': purchase_unit,
+                'purchase_subtotal': purchase_subtotal,
+                'purchase_currency': expense_currency,
+                'purchase_subtotal_converted': converted,
+                'purchase_unit_text': self._format_amount(purchase_unit, expense_currency),
+                'purchase_subtotal_text': self._format_amount(purchase_subtotal, expense_currency),
+                'sale_unit': purchase_unit,
+                'sale_subtotal': purchase_subtotal,
+                'sale_currency': expense_currency,
+                'sale_subtotal_converted': converted,
+                'sale_unit_text': self._format_amount(purchase_unit, expense_currency),
+                'sale_subtotal_text': self._format_amount(purchase_subtotal, expense_currency),
+            }
         pricelist = self._get_portal_pricelist(project=project)
         if pricelist:
             sale_currency = project.currency_id or pricelist.currency_id or expense_currency
@@ -552,6 +625,8 @@ class PortalProject(models.AbstractModel):
     def _get_stock_move_cost(self, move):
         quantity = move.quantity or move.product_uom_qty or 0.0
         fallback = move.price_unit or move.product_id.standard_price or 0.0
+        if not self._task_uses_open_book_costs(move.task_id):
+            return fallback * quantity
         return self._get_product_pricelist_subtotal(
             move.product_id, quantity,
             target_currency=move.company_id.currency_id,
@@ -565,6 +640,8 @@ class PortalProject(models.AbstractModel):
     def _get_labor_pricelist_subtotal(self, labor, target_currency=None):
         quantity = labor.regular_hours or 0.0
         fallback = labor.total_cost or 0.0
+        if not self._task_uses_open_book_costs(labor.task_id):
+            return fallback
         fallback_unit = fallback / quantity if quantity else fallback
         employee = labor.employee_id
         product = (
@@ -941,17 +1018,40 @@ class PortalProject(models.AbstractModel):
                 reverse=True,
             )
 
-        expense_total = sum(
-            expense_pricelist_map[expense.id]['sale_subtotal_converted']
-            for expense in approved_expenses
+        if self._task_uses_open_book_costs(task):
+            open_book_lines = self._get_task_open_book_cost_lines(task)
+            expense_total = sum(open_book_lines.filtered(
+                lambda line: line.source_type == 'expense'
+            ).mapped('subtotal'))
+            purchase_total = sum(open_book_lines.filtered(
+                lambda line: line.source_type == 'purchase'
+            ).mapped('subtotal'))
+            stock_total = sum(open_book_lines.filtered(
+                lambda line: line.source_type == 'stock'
+            ).mapped('subtotal'))
+            labor_total = sum(open_book_lines.filtered(
+                lambda line: line.source_type == 'labor'
+            ).mapped('subtotal'))
+            concept_impact_total = sum(open_book_lines.filtered(
+                lambda line: line.source_type == 'concept_impact'
+            ).mapped('subtotal'))
+        else:
+            open_book_lines = self.env['project.open.book.activity.line']
+            expense_total = sum(
+                expense_pricelist_map[expense.id]['sale_subtotal_converted']
+                for expense in approved_expenses
+            )
+            purchase_total = sum(
+                purchase_line_pricelist_map[line.id]['subtotal_converted']
+                for line in purchase_lines_to_cost
+            )
+            stock_total = sum(self._get_stock_move_cost(move) for move in stock_moves_to_cost)
+            labor_total = sum(labor_pricelist_map.values())
+            concept_impact_total = 0.0
+        total_cost = (
+            expense_total + purchase_total + stock_total + labor_total
+            + concept_impact_total
         )
-        purchase_total = sum(
-            purchase_line_pricelist_map[line.id]['subtotal_converted']
-            for line in purchase_lines_to_cost
-        )
-        stock_total = sum(self._get_stock_move_cost(move) for move in stock_moves_to_cost)
-        labor_total = sum(labor_pricelist_map.values())
-        total_cost = expense_total + purchase_total + stock_total + labor_total
         delivered_total = sum(self._get_advance_delivered_amount(advance) for advance in advances)
         billable_base_total = delivered_total + total_cost
 
@@ -972,10 +1072,12 @@ class PortalProject(models.AbstractModel):
             'movement_category_rows': movement_category_rows,
             'advances': advances,
             'labor_lines': labor_lines,
+            'open_book_lines': open_book_lines,
             'expense_total': expense_total,
             'purchase_total': purchase_total,
             'stock_total': stock_total,
             'labor_total': labor_total,
+            'concept_impact_total': concept_impact_total,
             'total_cost': total_cost,
             'delivered_total': delivered_total,
             'billable_base_total': billable_base_total,
@@ -988,6 +1090,9 @@ class PortalProject(models.AbstractModel):
             'purchase_total_text': self._format_amount(purchase_total, currency),
             'stock_total_text': self._format_amount(stock_total, currency),
             'labor_total_text': self._format_amount(labor_total, currency),
+            'concept_impact_total_text': self._format_amount(
+                concept_impact_total, currency
+            ),
             'total_cost_text': self._format_amount(total_cost, currency),
             'delivered_total_text': self._format_amount(delivered_total, currency),
             'billable_base_total_text': self._format_amount(billable_base_total, currency),
@@ -1006,6 +1111,9 @@ class PortalProject(models.AbstractModel):
             [_('Compras'), values['purchase_total_text']],
             [_('Material consumido de almacén'), values['stock_total_text']],
             [_('Mano de obra'), values['labor_total_text']],
+            [_('Impactos de concepto'), self._format_amount(
+                values['concept_impact_total'], values['currency']
+            )],
             [_('Costo antes de Fee'), values['total_cost_text']],
             [_('Base cobrable'), values['billable_base_total_text']],
             [_('Base para utilidad'), values['profit_base_total_text']],
@@ -1016,12 +1124,43 @@ class PortalProject(models.AbstractModel):
 
     def _get_task_portal_rows(self, tasks):
         rows = []
+
+        approval_model = self.env['portal.project.cost.approval'].sudo()
+        state_labels = dict(
+            approval_model._fields['state']._description_selection(self.env)
+        )
+
+        approvals = approval_model.search([
+            ('task_id','in', tasks.ids),
+            ('state','!=', 'cancelled'),
+        ], order='task_id, version desc, id desc')
+
+        latest_approval_by_task = {}
+
+        for approval in approvals:
+            # El primer registro encontrado es el corte más reciente de la tarea.
+            latest_approval_by_task.setdefault(approval.task_id.id, approval)
+
         for task in tasks:
             sale_order = task.sale_order_id
+            cost_approval = latest_approval_by_task.get(task.id)
+
             rows.append({
                 'task': task,
-                'invoice_status_text': self._selection_label(sale_order, 'invoice_status') if sale_order else _('Sin OS'),
+                'invoice_status_text': (
+                    self._selection_label(sale_order, 'invoice_status')
+                    if sale_order else _('Sin OS')
+                ),
+                'cost_approval': cost_approval,
+                'cost_approval_state': (
+                    cost_approval.state if cost_approval else 'not_submitted'
+                ),
+                'cost_approval_state_text': (
+                    state_labels.get(cost_approval.state,_('Sin Estado'))
+                    if cost_approval else _('Sin enviar')
+                ),
             })
+            
         return rows
 
     def _get_portal_record(self, task_id, section, record_id):

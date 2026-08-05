@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Portal Control de Obra',
-    'version': '17.0.1.0.7',
+    'version': '17.0.1.0.9',
     'category': 'Project',
     'summary': 'Portal de clientes para consultar avances y costos de tareas de control de obra',
     'author': 'Antonio J.',
@@ -26,6 +26,7 @@
         'views/pending_service_planning_views.xml',
         'views/pending_service_planning_import_views.xml',
         'views/portal_project_user_map_views.xml',
+        'views/portal_project_cost_approval_views.xml',
         'views/product_template_views.xml',
         'views/portal_project_templates.xml',
     ],

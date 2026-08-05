@@ -5,8 +5,11 @@
         <field name="model">pending.service</field>
         <field name="inherit_id" ref="project_modificaciones.view_pending_service_form" />
         <field name="arch" type="xml">
+            <field name="descripcion_servicio" position="after">
+                <field name="natura_servicio" />
+            </field>
             <xpath expr="//page[.//field[@name='internal_sale_order_id']]" position="before">
-                <page string="Planeación">
+                <page string="Planeación" invisible="1">
                     <div class="oe_button_box" name="planning_button_box">
                         <button name="action_download_planning_template"
                             type="object"
@@ -72,6 +75,88 @@
                             <field name="sequence" widget="handle" />
                             <field name="codigo" readonly="1" />
                             <field name="service_line_id" options="{'no_create': True, 'no_edit': True}" domain="[('service_id', '=', parent.id)]" />
+                            <field name="product_id" options="{'no_create': True, 'no_edit': True}" />
+                            <field name="description" />
+                            <field name="partner_id" options="{'no_create': True, 'no_edit': True}" />
+                            <field name="uom_id" options="{'no_create': True, 'no_edit': True}" />
+                            <field name="qty_planned" sum="Total Cantidad" />
+                            <field name="expected_consumption_date" optional="show" />
+                            <field name="qty_used" readonly="1" sum="Total Cantidad Consumida" optional="hide" />
+                            <field name="currency_id" column_invisible="True" />
+                            <field name="cost_unit" widget="monetary" options="{'currency_field': 'currency_id'}" />
+                            <field name="cost_planned" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Costo Planeado Total" />
+                            <field name="cost_used" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" sum="Costo Consumido Total" optional="hide" />
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_project_task_form_planning" model="ir.ui.view">
+        <field name="name">project.task.form.planning.portal.project</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='extra_info']" position="after">
+                <page string="Planeación" name="portal_project_planning">
+                    <div class="oe_button_box" name="planning_button_box">
+                        <button name="action_download_planning_template" type="object"
+                            string="Descargar plantilla" icon="fa-download"
+                            class="oe_stat_button"
+                            groups="project_modificaciones.group_license_create" />
+                        <button name="action_open_planning_import" type="object"
+                            string="Importar planeación" icon="fa-upload"
+                            class="oe_stat_button"
+                            groups="project_modificaciones.group_license_create" />
+                        <button name="action_clear_planning_import" type="object"
+                            string="Limpiar carga" icon="fa-trash"
+                            class="oe_stat_button"
+                            confirm="Se eliminará toda la planeación relacionada con esta tarea. Esta acción no se puede deshacer. ¿Deseas continuar?"
+                            groups="project_modificaciones.group_license_create" />
+                    </div>
+
+                    <separator string="Materiales, equipos / herramientas y servicios" />
+                    <field name="planned_material_ids" nolabel="1">
+                        <tree editable="bottom">
+                            <field name="sequence" widget="handle" />
+                            <field name="codigo" readonly="1" />
+                            <field name="tipo_recurso" />
+                            <field name="allowed_product_ids" column_invisible="True" />
+                            <field name="product_id" options="{'no_create': True, 'no_edit': True}" domain="[('id', 'in', allowed_product_ids)]" />
+                            <field name="qty_planned" sum="Total Planeado" />
+                            <field name="expected_consumption_date" optional="show" />
+                            <field name="qty_used" readonly="1" sum="Total Consumido" optional="hide" />
+                            <field name="currency_id" column_invisible="True" />
+                            <field name="cost_unit" widget="monetary" options="{'currency_field': 'currency_id'}" />
+                            <field name="cost_planned" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Costo Planeado Total" />
+                            <field name="cost_used" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" sum="Costo Consumido Total" optional="hide" />
+                        </tree>
+                    </field>
+
+                    <separator string="Mano de Obra Planeada" />
+                    <field name="planned_labor_ids" nolabel="1">
+                        <tree editable="bottom">
+                            <field name="sequence" widget="handle" />
+                            <field name="codigo" readonly="1" />
+                            <field name="employee_id" options="{'no_create': True, 'no_edit': True}" />
+                            <field name="description" />
+                            <field name="job_id" options="{'no_create': True, 'no_edit': True}" />
+                            <field name="hours_planned" sum="Total Horas Planeadas" />
+                            <field name="expected_consumption_date" optional="show" />
+                            <field name="hours_used" readonly="1" sum="Total Horas Consumidas" optional="hide" />
+                            <field name="currency_id" column_invisible="True" />
+                            <field name="cost_unit" widget="monetary" options="{'currency_field': 'currency_id'}" />
+                            <field name="cost_planned" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Costo Planeado Total" />
+                            <field name="cost_used" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" sum="Costo Consumido Total" optional="hide" />
+                        </tree>
+                    </field>
+
+                    <separator string="Servicios Externos" />
+                    <field name="planned_service_ex_ids" nolabel="1">
+                        <tree editable="bottom">
+                            <field name="sequence" widget="handle" />
+                            <field name="codigo" readonly="1" />
                             <field name="product_id" options="{'no_create': True, 'no_edit': True}" />
                             <field name="description" />
                             <field name="partner_id" options="{'no_create': True, 'no_edit': True}" />

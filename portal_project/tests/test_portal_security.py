@@ -1,6 +1,6 @@
 import base64
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import TransactionCase, new_test_user, tagged
 
 
@@ -125,3 +125,49 @@ class TestPortalProjectSecurity(TransactionCase):
 
         self.assertIn(visible_attachment, attachments)
         self.assertNotIn(hidden_attachment, attachments)
+
+    def test_open_book_cost_comes_from_cut_lines(self):
+        self.project_a.open_book_contract_type = 'open_book'
+        activity = self.env['project.open.book.activity'].create({
+            'name': 'Corte portal',
+            'project_id': self.project_a.id,
+            'task_id': self.task_a.id,
+        })
+        self.env['project.open.book.activity.line'].create({
+            'activity_id': activity.id,
+            'source_type': 'expense',
+            'description': 'Costo fotografiado',
+            'quantity': 1.0,
+            'unit_cost': 123.45,
+            'subtotal': 123.45,
+        })
+
+        values = self.env['portal.project']._get_task_portal_values(self.task_a)
+
+        self.assertEqual(values['expense_total'], 123.45)
+        self.assertEqual(values['total_cost'], 123.45)
+
+    def test_non_open_book_purchase_uses_origin_price(self):
+        product = self.env['product.product'].create({
+            'name': 'Costo origen',
+            'purchase_ok': True,
+        })
+        order = self.env['purchase.order'].create({
+            'partner_id': self.client_a.id,
+        })
+        line = self.env['purchase.order.line'].create({
+            'order_id': order.id,
+            'name': product.name,
+            'product_id': product.id,
+            'product_qty': 2.0,
+            'product_uom': product.uom_po_id.id,
+            'price_unit': 42.0,
+            'date_planned': fields.Datetime.now(),
+            'task_id': self.task_a.id,
+        })
+
+        amounts = self.env['portal.project']._get_purchase_line_pricelist_amounts(
+            line, order.currency_id
+        )
+
+        self.assertEqual(amounts['subtotal_converted'], 84.0)

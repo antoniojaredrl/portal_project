@@ -95,6 +95,7 @@
                                 <tr><td>Compras no consumidas por almacén</td><td class="pp-report-right"><t t-out="vals['purchase_total_text']"/></td></tr>
                                 <tr><td>Material consumido de almacén</td><td class="pp-report-right"><t t-out="vals['stock_total_text']"/></td></tr>
                                 <tr><td>Mano de obra</td><td class="pp-report-right"><t t-out="vals['labor_total_text']"/></td></tr>
+                                <tr t-if="vals['concept_impact_total']"><td>Impactos de concepto</td><td class="pp-report-right"><t t-out="vals['concept_impact_total_text']"/></td></tr>
                                 <tr class="pp-report-total"><td>Total costos</td><td class="pp-report-right"><t t-out="vals['total_cost_text']"/></td></tr>
                                 <tr><td>Base cobrable</td><td class="pp-report-right"><t t-out="vals['billable_base_total_text']"/></td></tr>
                                 <tr><td>Utilidad</td><td class="pp-report-right"><t t-out="'%.2f' % vals['profit_percentage']"/>% (<t t-out="vals['profit_amount_text']"/>)</td></tr>

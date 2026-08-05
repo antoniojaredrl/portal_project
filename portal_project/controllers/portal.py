@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import base64
-import csv
-import io
 import json
 import datetime
 import pytz
@@ -97,6 +95,164 @@ class PortalProjectController(CustomerPortal):
             '/my/control-obra/tareas',
             **{key: kw.get(key) for key in allowed_params},
         )
+
+    def _get_pending_cost_approval_domain(self, task_ids=None):
+        portal_project = request.env['portal.project']
+        user_map = portal_project._get_portal_user_map(active_only=True)
+        domain = [('id', '=', 0)]
+        if user_map and user_map.portal_role == 'authorizer':
+            if user_map.role == 'client_supervisor':
+                domain = [('state', '=', 'supervisor_review')]
+            elif user_map.role == 'purchases_user':
+                domain = [('state', '=', 'purchase_review')]
+        if task_ids is not None:
+            domain.append(('task_id', 'in', task_ids or [0]))
+        return domain
+
+    def _get_task_navigation(self, task, **kw):
+        """Return previous/next visible tasks while preserving list context."""
+        portal_project = request.env['portal.project']
+        Task = request.env['project.task'].sudo()
+        domain = portal_project._get_portal_task_domain()
+
+        search = kw.get('search')
+        search_in = kw.get('search_in', 'content')
+        if search:
+            if search_in == 'project':
+                domain = AND([domain, [('project_id.name', 'ilike', search)]])
+            elif search_in == 'name':
+                domain = AND([domain, [('name', 'ilike', search)]])
+            else:
+                domain = AND([domain, OR([
+                    [('name', 'ilike', search)],
+                    [('project_id.name', 'ilike', search)],
+                    [('sale_line_id.name', 'ilike', search)],
+                ])])
+
+        date_from = self._portal_project_to_date(kw.get('date_from'))
+        date_to = self._portal_project_to_date(kw.get('date_to'))
+        progress_from = self._portal_project_to_percentage(kw.get('progress_from'))
+        progress_to = self._portal_project_to_percentage(kw.get('progress_to'))
+        if progress_from is not False and progress_to is not False and progress_from > progress_to:
+            progress_from, progress_to = progress_to, progress_from
+        filters = []
+        for param, field_name in (
+            ('supervisor_id', 'supervisor_interno'),
+            ('client_supervisor_id', 'supervisor_cliente'),
+            ('project_id', 'project_id'),
+            ('plant_id', 'planta_trabajo'),
+            ('sale_order_id', 'sale_order_id'),
+        ):
+            value = self._portal_project_to_int(kw.get(param))
+            if value:
+                filters.append((field_name, '=', value))
+        if date_from:
+            filters.append(('create_date', '>=', date_from))
+        if date_to:
+            filters.append(('create_date', '<=', date_to))
+        invoice_status = kw.get('invoice_status')
+        if invoice_status == 'no_sale_order':
+            filters.append(('sale_order_id', '=', False))
+        elif invoice_status:
+            filters.append(('sale_order_id.invoice_status', '=', invoice_status))
+        if progress_from is not False:
+            filters.append(('progress', '>=', progress_from))
+        if progress_to is not False:
+            filters.append(('progress', '<=', progress_to))
+        if filters:
+            domain = AND([domain, filters])
+
+        tasks = Task.search(domain)
+        filter_kpi = kw.get('filter_kpi')
+        if filter_kpi == 'in_progress':
+            tasks = tasks.filtered(lambda item: self._get_task_state_classification(item)[0] == 'ejecucion')
+        elif filter_kpi == 'on_time':
+            today_date = self._get_today_date()
+            tasks = tasks.filtered(lambda item: (
+                self._get_task_sla_status(item, today_date)['measurable']
+                and self._get_task_sla_status(item, today_date)['on_time']
+            ))
+        elif filter_kpi == 'hh_today':
+            line_domain = [('task_id', 'in', tasks.ids)]
+            if date_from:
+                line_domain.append(('date', '>=', date_from))
+            if date_to:
+                line_domain.append(('date', '<=', date_to))
+            tasks = tasks.filtered(lambda item: item.id in self._get_compensation_lines(line_domain).mapped('task_id').ids)
+        elif filter_kpi == 'cost_month':
+            today_date = self._get_today_date()
+            month_start = datetime.date(today_date.year, today_date.month, 1)
+            month_end = (
+                datetime.date(today_date.year + 1, 1, 1)
+                if today_date.month == 12
+                else datetime.date(today_date.year, today_date.month + 1, 1)
+            ) - datetime.timedelta(days=1)
+            expense_task_ids = request.env['hr.expense'].sudo().search([
+                ('task_id', 'in', tasks.ids),
+                ('sheet_id.state', 'in', ['approve', 'post', 'done']),
+                ('date', '>=', month_start), ('date', '<=', month_end),
+            ]).mapped('task_id').ids
+            stock_task_ids = request.env['stock.move'].sudo().search([
+                ('task_id', 'in', tasks.ids), ('state', '=', 'done'),
+                ('picking_type_id.code', '=', 'outgoing'),
+                *self._local_datetime_domain('date', month_start, month_end),
+            ]).mapped('task_id').ids
+            labor_task_ids = self._get_compensation_lines([
+                ('task_id', 'in', tasks.ids),
+                ('date', '>=', month_start), ('date', '<=', month_end),
+            ]).mapped('task_id').ids
+            cost_task_ids = set(expense_task_ids + stock_task_ids + labor_task_ids)
+            tasks = tasks.filtered(lambda item: item.id in cost_task_ids)
+
+        sortby = kw.get('sortby') if kw.get('sortby') in (
+            'date', 'name', 'project', 'progress', 'internal_supervisor',
+            'client_supervisor', 'invoice_status',
+        ) else 'date'
+        sort_keys = {
+            'date': lambda item: item.create_date or item.write_date,
+            'name': lambda item: (item.name or '').lower(),
+            'project': lambda item: (item.project_id.name or '').lower(),
+            'progress': lambda item: item.progress or 0.0,
+            'internal_supervisor': lambda item: (
+                item.supervisor_interno.name or ''
+                if 'supervisor_interno' in item._fields and item.supervisor_interno else ''
+            ).lower(),
+            'client_supervisor': lambda item: (
+                item.supervisor_cliente.name or ''
+                if 'supervisor_cliente' in item._fields and item.supervisor_cliente else ''
+            ).lower(),
+            'invoice_status': lambda item: (
+                portal_project._selection_label(item.sale_order_id, 'invoice_status')
+                if item.sale_order_id else _('Sin OS')
+            ).lower(),
+        }
+        tasks = tasks.sorted(
+            key=sort_keys[sortby],
+            reverse=kw.get('sort_order', 'desc') == 'desc',
+        )
+        task_ids = tasks.ids
+        if task.id not in task_ids:
+            return {'previous_url': False, 'next_url': False, 'position': False, 'total': len(task_ids)}
+        index = task_ids.index(task.id)
+        context_params = {
+            key: value for key, value in kw.items()
+            if key in (
+                'sortby', 'search_in', 'search', 'sort_order', 'groupby', 'page_size',
+                'date_from', 'date_to', 'supervisor_id', 'client_supervisor_id',
+                'project_id', 'plant_id', 'sale_order_id', 'invoice_status', 'filter_kpi',
+                'view', 'progress_from', 'progress_to',
+            )
+        }
+        return {
+            'previous_url': self._portal_project_url(
+                '/my/control-obra/%s' % task_ids[index - 1], **context_params
+            ) if index else False,
+            'next_url': self._portal_project_url(
+                '/my/control-obra/%s' % task_ids[index + 1], **context_params
+            ) if index + 1 < len(task_ids) else False,
+            'position': index + 1,
+            'total': len(task_ids),
+        }
 
     def _empty_recordset(self, model_name):
         return request.env[model_name].sudo().browse()
@@ -602,9 +758,32 @@ class PortalProjectController(CustomerPortal):
     def _get_portal_real_cost_rows(self, task_domain, date_from=False, date_to=False):
         portal_project = request.env['portal.project']
         tasks = request.env['project.task'].sudo().search(task_domain)
-        task_ids = tasks.ids
+        open_book_tasks = tasks.filtered(portal_project._task_uses_open_book_costs)
+        origin_tasks = tasks - open_book_tasks
+        task_ids = origin_tasks.ids
         rows = []
         currency = request.env.company.currency_id
+
+        type_labels = {
+            'expense': _('Gasto'),
+            'purchase': _('Compra'),
+            'stock': _('Almacén'),
+            'labor': _('Mano de obra'),
+            'concept_impact': _('Impacto de concepto'),
+        }
+        for task in open_book_tasks:
+            for line in portal_project._get_task_open_book_cost_lines(
+                task, date_from, date_to
+            ):
+                rows.append({
+                    'type': line.source_type,
+                    'type_label': type_labels.get(line.source_type, _('Costo MOB')),
+                    'date': fields.Date.to_date(line.date),
+                    'task': task,
+                    'description': line.description or line.display_name,
+                    'amount': line.subtotal,
+                    'record': line,
+                })
 
         expenses_domain = [
             ('task_id', 'in', task_ids),
@@ -682,6 +861,81 @@ class PortalProjectController(CustomerPortal):
 
         rows.sort(key=lambda row: (row['date'] or datetime.date.min, row['type_label'], row['description'] or ''), reverse=True)
         return rows
+
+    def _get_task_cost_category_values(self, task, cost_rows=None):
+        portal_project = request.env['portal.project']
+        currency = portal_project._get_task_currency(task)
+        categories = {
+            'materials': {'label': _('Materiales'), 'rows': []},
+            'labor': {'label': _('Mano de Obra'), 'rows': []},
+            'equipment_tools': {'label': _('Equipos y Herramientas'), 'rows': []},
+            'external_services': {'label': _('Servicios Externos'), 'rows': []},
+        }
+        if cost_rows is None:
+            cost_rows = self._get_portal_real_cost_rows([('id', '=', task.id)])
+        for cost_row in cost_rows:
+            record = cost_row['record']
+            product = record.product_id if 'product_id' in record._fields else False
+            category = (
+                'labor' if cost_row['type'] == 'labor'
+                else product.product_tmpl_id.portal_movement_category
+                if product and 'portal_movement_category' in product.product_tmpl_id._fields
+                else 'materials'
+            )
+            category = category if category in categories else 'materials'
+            quantity = 1.0
+            uom = False
+            unit_amount = cost_row['amount']
+            if record._name == 'project.open.book.activity.line':
+                quantity = record.quantity or 0.0
+                uom = record.uom_id
+                unit_amount = record.unit_cost or (cost_row['amount'] / quantity if quantity else cost_row['amount'])
+            elif cost_row['type'] == 'expense':
+                amounts = portal_project._get_expense_pricelist_amounts(record, currency)
+                quantity = amounts['quantity']
+                uom = record.product_uom_id if 'product_uom_id' in record._fields else False
+                unit_amount = amounts['sale_unit']
+            elif cost_row['type'] == 'purchase':
+                amounts = portal_project._get_purchase_line_pricelist_amounts(record, currency)
+                quantity = record.product_qty or 0.0
+                uom = record.product_uom
+                unit_amount = amounts['price_unit']
+            elif cost_row['type'] == 'stock':
+                quantity = record.quantity or record.product_uom_qty or 0.0
+                uom = record.product_uom
+                unit_amount = cost_row['amount'] / quantity if quantity else cost_row['amount']
+            elif cost_row['type'] == 'labor':
+                quantity = record.regular_hours or 0.0
+                uom = _('Horas')
+                unit_amount = cost_row['amount'] / quantity if quantity else cost_row['amount']
+
+            description = cost_row['description']
+            if cost_row['type'] == 'labor':
+                employee = record.employee_id if 'employee_id' in record._fields else False
+                if employee and employee.job_id:
+                    description = employee.job_id.display_name
+
+            categories[category]['rows'].append({
+                'description': description,
+                'unit': uom.display_name if uom and hasattr(uom, 'display_name') else (uom or '-'),
+                'quantity': quantity,
+                'unit_amount_text': portal_project._format_amount(unit_amount, currency),
+                'amount': cost_row['amount'],
+                'amount_text': portal_project._format_amount(cost_row['amount'], currency),
+            })
+
+        total = 0.0
+        for key, values in categories.items():
+            values['key'] = key
+            values['amount'] = sum(row['amount'] for row in values['rows'])
+            values['amount_text'] = portal_project._format_amount(values['amount'], currency)
+            total += values['amount']
+        return {
+            'categories': list(categories.values()),
+            'categories_by_key': categories,
+            'total': total,
+            'total_text': portal_project._format_amount(total, currency),
+        }
 
     def _get_linear_planned_amount(self, amount, start_date, deadline, date_point):
         if date_point < start_date:
@@ -1408,6 +1662,11 @@ class PortalProjectController(CustomerPortal):
             domain = AND([domain, filter_domain])
 
         dashboard_tasks = Task.search(domain)
+        pending_cost_approval_domain = self._get_pending_cost_approval_domain(dashboard_tasks.ids)
+        show_cost_approval_kpi = pending_cost_approval_domain[0] != ('id', '=', 0)
+        pending_cost_approval_count = request.env['portal.project.cost.approval'].sudo().search_count(
+            pending_cost_approval_domain
+        ) if show_cost_approval_kpi else 0
 
         # ----------------------------------------------------
         # DASHBOARD CALCULATIONS
@@ -1425,7 +1684,8 @@ class PortalProjectController(CustomerPortal):
             for t in dashboard_tasks
         }
 
-        # 1. Total de OT operativas / En Ejecución
+        # 1. Proyectos visibles / Total de OT operativas / En Ejecución
+        total_projects = len(dashboard_tasks.mapped('project_id'))
         ot_activas = len(dashboard_tasks)
         en_ejecucion = len([tid for tid, sk in dashboard_task_states.items() if sk == 'ejecucion'])
 
@@ -1603,15 +1863,11 @@ class PortalProjectController(CustomerPortal):
             
             warehouse_stock_moves = stock_moves_dp.filtered(lambda m: not m.purchase_line_id)
             
-            cost_dp = (
-                self._get_expense_pricelist_total(expenses_dp, request.env.company.currency_id) +
-                sum(portal_project._get_stock_move_cost(move) for move in warehouse_stock_moves) +
-                sum(
-                    portal_project._get_labor_pricelist_subtotal(line, request.env.company.currency_id)
-                    for line in labor_lines_dp
-                ) +
-                purchase_real_cost
-            )
+            # Use the same source as the cost listing: MOB cut snapshots for
+            # Open Book tasks and origin-record amounts for all other tasks.
+            cost_dp = sum(row['amount'] for row in self._get_portal_real_cost_rows(
+                [('id', 'in', dashboard_tasks.ids)], date_to=dp
+            ))
             committed_cost_dp = purchase_committed_cost
             
             planned_cost_dp = 0.0
@@ -1696,12 +1952,15 @@ class PortalProjectController(CustomerPortal):
         pending_service_alerts.sort(key=lambda x: (x['color'] == 'red', x['avance_planeado'] - x['avance_actual']), reverse=True)
 
         dashboard_data = {
+            'total_projects': total_projects,
             'ot_activas': ot_activas,
             'en_ejecucion': en_ejecucion,
             'service_request_count': service_request_count,
             'hh_reales_hoy': int(hh_reales_hoy),
             'avance_promedio': int(avg_progress),
             'costo_real_mes': costo_real_mes,
+            'pending_cost_approval_count': pending_cost_approval_count,
+            'show_cost_approval_kpi': show_cost_approval_kpi,
             'sla_cumplimiento': int(sla_cumplimiento),
             'date_labels': Markup(json.dumps([dp.strftime('%d %b') for dp in date_points])),
             'date_labels_raw': Markup(json.dumps([dp.strftime('%Y-%m-%d') for dp in date_points])),
@@ -1777,7 +2036,16 @@ class PortalProjectController(CustomerPortal):
                     plant_id=plant_id,
                 ),
                 'costo_real': self._portal_project_url(
-                    '/my/control-obra/costo-real',
+                    '/my/control-obra/costo-real/desglose',
+                    date_from=date_from,
+                    date_to=date_to,
+                    supervisor_id=supervisor_id,
+                    client_supervisor_id=client_supervisor_id,
+                    project_id=project_id,
+                    plant_id=plant_id,
+                ),
+                'cost_approvals': self._portal_project_url(
+                    '/my/control-obra/aprobaciones-costos',
                     date_from=date_from,
                     date_to=date_to,
                     supervisor_id=supervisor_id,
@@ -1800,6 +2068,50 @@ class PortalProjectController(CustomerPortal):
             **portal_project._get_portal_filter_options(base_domain),
         })
         return request.render('portal_project.portal_my_control_obra_dashboard', values)
+
+    @http.route(['/my/control-obra/aprobaciones-costos'], type='http', auth='user', website=True)
+    def portal_my_pending_cost_approvals(self, date_from=None, date_to=None,
+                                         supervisor_id=None, client_supervisor_id=None,
+                                         project_id=None, plant_id=None, **kw):
+        portal_project = request.env['portal.project']
+        task_domain = portal_project._get_portal_task_domain()
+        supervisor_id = self._portal_project_to_int(supervisor_id)
+        client_supervisor_id = self._portal_project_to_int(client_supervisor_id)
+        project_id = self._portal_project_to_int(project_id)
+        plant_id = self._portal_project_to_int(plant_id)
+        date_from = self._portal_project_to_date(date_from)
+        date_to = self._portal_project_to_date(date_to)
+        filter_domain = self._get_portal_task_filter_domain(
+            supervisor_id=supervisor_id, client_supervisor_id=client_supervisor_id,
+            project_id=project_id, plant_id=plant_id,
+            date_from=date_from, date_to=date_to,
+        )
+        if filter_domain:
+            task_domain = AND([task_domain, filter_domain])
+        task_ids = request.env['project.task'].sudo().search(task_domain).ids
+        approvals = request.env['portal.project.cost.approval'].sudo().search(
+            self._get_pending_cost_approval_domain(task_ids),
+            order='requested_date asc, id asc',
+        )
+        today = self._get_today_date()
+        approval_rows = []
+        for approval in approvals:
+            requested_date = fields.Date.to_date(approval.requested_date)
+            approval_rows.append({
+                'approval': approval,
+                'state_label': dict(approval._fields['state']._description_selection(request.env)).get(approval.state),
+                'total_text': portal_project._format_amount(approval.total_amount, approval.currency_id),
+                'pending_days': max(0, (today - requested_date).days) if requested_date else 0,
+                'url': '/my/control-obra/%s?tab=cost-approval#cost-cut-heading-%s' % (
+                    approval.task_id.id, approval.id,
+                ),
+            })
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'portal_project_pending_cost_approvals',
+            'approval_rows': approval_rows,
+        })
+        return request.render('portal_project.portal_pending_cost_approvals', values)
 
     @http.route(['/my/control-obra/solicitudes', '/my/control-obra/solicitudes/page/<int:page>'],
                 type='http', auth='user', website=True)
@@ -2030,6 +2342,70 @@ class PortalProjectController(CustomerPortal):
         })
         return request.render('portal_project.portal_my_work_hh_reales', values)
 
+    @http.route(['/my/control-obra/costo-real/desglose'],
+                type='http', auth='user', website=True)
+    def portal_my_control_obra_cost_breakdown(self, date_from=None, date_to=None,
+                                               supervisor_id=None, client_supervisor_id=None,
+                                               project_id=None, plant_id=None, **kw):
+        values = self._prepare_portal_layout_values()
+        portal_project = request.env['portal.project']
+        Task = request.env['project.task'].sudo()
+        task_domain = portal_project._get_portal_task_domain()
+        supervisor_id = self._portal_project_to_int(supervisor_id)
+        client_supervisor_id = self._portal_project_to_int(client_supervisor_id)
+        project_id = self._portal_project_to_int(project_id)
+        plant_id = self._portal_project_to_int(plant_id)
+        date_from = self._portal_project_to_date(date_from)
+        date_to = self._portal_project_to_date(date_to)
+        filter_domain = self._get_portal_task_filter_domain(
+            supervisor_id=supervisor_id,
+            client_supervisor_id=client_supervisor_id,
+            project_id=project_id,
+            plant_id=plant_id,
+            include_dates=False,
+        )
+        if filter_domain:
+            task_domain = AND([task_domain, filter_domain])
+        all_rows = self._get_portal_real_cost_rows(task_domain, date_from, date_to)
+        rows_by_task = {}
+        for row in all_rows:
+            rows_by_task.setdefault(row['task'].id, []).append(row)
+        task_breakdowns = []
+        for task in Task.browse(list(rows_by_task)).sorted(
+            key=lambda item: (item.name or '').lower()
+        ):
+            breakdown = self._get_task_cost_category_values(
+                task, rows_by_task.get(task.id, [])
+            )
+            task_breakdowns.append({
+                'task': task,
+                'breakdown': breakdown,
+                'detail_url': self._portal_project_url(
+                    '/my/control-obra/%s' % task.id,
+                    date_from=date_from,
+                    date_to=date_to,
+                    supervisor_id=supervisor_id,
+                    client_supervisor_id=client_supervisor_id,
+                    project_id=project_id,
+                    plant_id=plant_id,
+                ),
+            })
+        currency = request.env.company.currency_id
+        total_amount = sum(row['amount'] for row in all_rows)
+        values.update({
+            'page_name': 'portal_project_cost_breakdown',
+            'task_breakdowns': task_breakdowns,
+            'total_amount_text': portal_project._format_amount(total_amount, currency),
+            'date_from': date_from,
+            'date_to': date_to,
+            'selected_supervisor_id': supervisor_id,
+            'selected_client_supervisor_id': client_supervisor_id,
+            'selected_project_id': project_id,
+            'selected_plant_id': plant_id,
+            **portal_project._get_portal_filter_options(portal_project._get_portal_task_domain()),
+        })
+        return request.render('portal_project.portal_main_cost_breakdown', values)
+
     @http.route(['/my/control-obra/costo-real', '/my/control-obra/costo-real/page/<int:page>'],
                 type='http', auth='user', website=True)
     def portal_my_control_obra_costo_real(self, page=1, date_from=None, date_to=None,
@@ -2078,6 +2454,10 @@ class PortalProjectController(CustomerPortal):
         total_purchase = sum(row['amount'] for row in all_rows if row['type'] == 'purchase')
         total_stock = sum(row['amount'] for row in all_rows if row['type'] == 'stock')
         total_labor = sum(row['amount'] for row in all_rows if row['type'] == 'labor')
+        total_concept_impact = sum(
+            row['amount'] for row in all_rows
+            if row['type'] == 'concept_impact'
+        )
 
         filter_args = {
             'date_from': date_from,
@@ -2136,6 +2516,9 @@ class PortalProjectController(CustomerPortal):
             'total_purchase_text': portal_project._format_amount(total_purchase, currency),
             'total_stock_text': portal_project._format_amount(total_stock, currency),
             'total_labor_text': portal_project._format_amount(total_labor, currency),
+            'total_concept_impact_text': portal_project._format_amount(
+                total_concept_impact, currency
+            ),
             'date_from': date_from,
             'date_to': date_to,
             'selected_supervisor_id': supervisor_id,
@@ -2672,15 +3055,9 @@ class PortalProjectController(CustomerPortal):
             
             warehouse_stock_moves = stock_moves_dp.filtered(lambda m: not m.purchase_line_id)
             
-            cost_dp = (
-                self._get_expense_pricelist_total(expenses_dp, portal_project._get_task_currency(task)) +
-                sum(portal_project._get_stock_move_cost(move) for move in warehouse_stock_moves) +
-                sum(
-                    portal_project._get_labor_pricelist_subtotal(line, portal_project._get_task_currency(task))
-                    for line in labor_lines_dp
-                ) +
-                purchase_real_cost
-            )
+            cost_dp = sum(row['amount'] for row in self._get_portal_real_cost_rows(
+                [('id', '=', task.id)], date_to=dp
+            ))
             committed_cost_dp = purchase_committed_cost
 
             if self._service_has_cost_plan(service):
@@ -2754,13 +3131,58 @@ class PortalProjectController(CustomerPortal):
         }
 
         values = self._prepare_portal_layout_values()
+        task_navigation = self._get_task_navigation(task, **kw)
+        task_cost_detail_url = self._portal_project_url(
+            '/my/control-obra/%s/costos' % task.id, **kw
+        )
+        cost_approval_values = []
+        user_map = portal_project._get_portal_user_map(active_only=True)
+        for approval in request.env['portal.project.cost.approval'].sudo().search([
+            ('task_id', '=', task.id), ('state', '!=', 'cancelled'),
+        ], order='version desc'):
+            category_groups = []
+            for category_key, category_label in (
+                ('materials', _('Materiales')),
+                ('labor', _('Mano de Obra')),
+                ('equipment_tools', _('Equipos y Herramientas')),
+                ('external_services', _('Servicios Externos')),
+            ):
+                lines = approval.line_ids.filtered(lambda line: line.category == category_key)
+                category_groups.append({
+                    'key': category_key, 'label': category_label, 'lines': lines,
+                    'amount_text': portal_project._format_amount(sum(lines.mapped('amount')), approval.currency_id),
+                })
+            can_supervisor = bool(
+                approval.state == 'supervisor_review' and user_map
+                and user_map.active and user_map.role == 'client_supervisor'
+                and user_map.portal_role == 'authorizer'
+            )
+            can_purchase = bool(
+                approval.state == 'purchase_review' and user_map
+                and user_map.active and user_map.role == 'purchases_user'
+                and user_map.portal_role == 'authorizer'
+            )
+            cost_approval_values.append({
+                'approval': approval,
+                'categories': category_groups,
+                'can_approve': can_supervisor or can_purchase,
+                'approve_url': '/my/control-obra/%s/cost-approval/%s/approve' % (task.id, approval.id),
+                'reject_url': '/my/control-obra/%s/cost-approval/%s/reject' % (task.id, approval.id),
+                'amount_before_fee_text': portal_project._format_amount(approval.amount_before_fee, approval.currency_id),
+                'fee_amount_text': portal_project._format_amount(approval.fee_amount, approval.currency_id),
+                'total_amount_text': portal_project._format_amount(approval.total_amount, approval.currency_id),
+                'state_label': dict(approval._fields['state']._description_selection(request.env)).get(approval.state),
+            })
         values.update({
             'task': task,
             'page_name': 'portal_project_work',
+            'active_task_tab': 'cost-approval' if kw.get('tab') == 'cost-approval' else 'charts',
             'task_back_url': self._get_task_list_back_url(**kw),
+            'task_navigation': task_navigation,
+            'task_cost_detail_url': task_cost_detail_url,
+            'cost_approval_values': cost_approval_values,
             'task_detail_sections': portal_project._get_task_detail_sections(task),
             'task_approval_values': portal_project._get_task_approval_values(task),
-            'show_financial_summary': portal_project._portal_can_view_financial_summary(),
             'messages': portal_project._get_record_messages(task),
             'message_post_url': '/my/control-obra/%s/message' % task.id,
             'show_conversation': True,
@@ -2769,6 +3191,73 @@ class PortalProjectController(CustomerPortal):
             **portal_project._get_task_portal_values(task),
         })
         return request.render('portal_project.portal_work_task_page', values)
+
+    @http.route('/my/control-obra/<int:task_id>/cost-approval/<int:approval_id>/<string:action>',
+                type='http', auth='user', methods=['POST'], website=True, csrf=True)
+    def portal_control_obra_cost_approval(self, task_id, approval_id, action, **post):
+        portal_project = request.env['portal.project']
+        task = portal_project._get_portal_task(task_id)
+        if not task:
+            return request.redirect('/my')
+        approval = request.env['portal.project.cost.approval'].sudo().search([
+            ('id', '=', approval_id), ('task_id', '=', task.id),
+        ], limit=1)
+        if not approval:
+            return request.redirect('/my/control-obra/%s' % task.id)
+        user_map = portal_project._get_portal_user_map(active_only=True)
+        can_supervisor = bool(
+            approval.state == 'supervisor_review' and user_map
+            and user_map.role == 'client_supervisor' and user_map.portal_role == 'authorizer'
+        )
+        can_purchase = bool(
+            approval.state == 'purchase_review' and user_map
+            and user_map.role == 'purchases_user' and user_map.portal_role == 'authorizer'
+        )
+        if not (can_supervisor or can_purchase):
+            return request.redirect('/my/control-obra/%s' % task.id)
+        note = (post.get('note') or '').strip()
+        if action == 'approve':
+            if can_supervisor:
+                approval.action_portal_approve_supervisor(request.env.user, note)
+            else:
+                approval.action_portal_approve_purchase(request.env.user, note)
+        elif action == 'reject' and note:
+            approval.action_portal_reject(request.env.user, note)
+        return request.redirect('/my/control-obra/%s' % task.id)
+
+    @http.route([
+        '/my/control-obra/<int:task_id>/costos',
+        '/my/control-obra/<int:task_id>/costos/<string:category_key>',
+    ], type='http', auth='user', website=True)
+    def portal_control_obra_task_costs(self, task_id, category_key=None, **kw):
+        portal_project = request.env['portal.project']
+        task = portal_project._get_portal_task(task_id)
+        if not task:
+            return request.redirect('/my')
+        cost_values = self._get_task_cost_category_values(task)
+        selected_category = cost_values['categories_by_key'].get(category_key) if category_key else False
+        if category_key and not selected_category:
+            return request.redirect('/my/control-obra/%s/costos' % task.id)
+        context_params = dict(kw)
+        for category in cost_values['categories']:
+            category['url'] = self._portal_project_url(
+                '/my/control-obra/%s/costos/%s' % (task.id, category['key']),
+                **context_params
+            )
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'page_name': 'portal_project_task_costs',
+            'task': task,
+            'cost_values': cost_values,
+            'selected_category': selected_category,
+            'task_detail_url': self._portal_project_url(
+                '/my/control-obra/%s' % task.id, **context_params
+            ),
+            'cost_summary_url': self._portal_project_url(
+                '/my/control-obra/%s/costos' % task.id, **context_params
+            ),
+        })
+        return request.render('portal_project.portal_task_cost_breakdown', values)
 
     @http.route(['/my/control-obra/<int:task_id>/message'], type='http', auth='user', methods=['POST'], website=True)
     def portal_control_obra_task_message(self, task_id, **post):
@@ -2802,66 +3291,6 @@ class PortalProjectController(CustomerPortal):
             note = (post.get('note') or '').strip() or False
             approval.action_portal_approve(request.env.user, note=note)
         return request.redirect('/my/control-obra/%s' % task.id)
-
-    @http.route(['/my/control-obra/<int:task_id>/export.csv'], type='http', auth='user', website=True)
-    def portal_control_obra_task_export(self, task_id, **kw):
-        portal_project = request.env['portal.project']
-        task = portal_project._get_portal_task(task_id)
-        if not task:
-            return request.redirect('/my')
-        if not portal_project._portal_can_view_financial_summary():
-            return request.redirect('/my/control-obra/%s' % task.id)
-
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerows(portal_project._get_task_export_rows(task))
-        filename = 'control_obra_%s.csv' % task.id
-        return request.make_response(
-            buffer.getvalue(),
-            headers=[
-                ('Content-Type', 'text/csv; charset=utf-8'),
-                ('Content-Disposition', 'attachment; filename="%s"' % filename),
-            ],
-        )
-
-    @http.route(['/my/control-obra/<int:task_id>/export.pdf'], type='http', auth='user', website=True)
-    def portal_control_obra_task_export_pdf(self, task_id, **kw):
-        portal_project = request.env['portal.project']
-        task = portal_project._get_portal_task(task_id)
-        if not task:
-            return request.redirect('/my')
-        if not portal_project._portal_can_view_financial_summary():
-            return request.redirect('/my/control-obra/%s' % task.id)
-
-        pdf = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
-            'portal_project.action_report_portal_control_obra_task_pdf',
-            [task.id],
-            data={'portal_user_id': request.env.user.id},
-        )[0]
-        filename = 'control_obra_%s.pdf' % task.id
-        return request.make_response(
-            pdf,
-            headers=[
-                ('Content-Type', 'application/pdf'),
-                ('Content-Disposition', 'attachment; filename="%s"' % filename),
-            ],
-        )
-
-    @http.route(['/my/control-obra/profit'], type='http', auth='user', methods=['POST'], website=True)
-    def portal_control_obra_update_profit(self, **post):
-        portal_project = request.env['portal.project']
-        if not portal_project._portal_can_view_financial_summary():
-            return request.redirect('/my/control-obra')
-        raw_percentage = (post.get('profit_percentage') or '0').replace(',', '.')
-        try:
-            percentage = float(raw_percentage)
-        except ValueError:
-            percentage = 0.0
-        portal_project._set_portal_profit_percentage(percentage)
-        redirect_url = post.get('redirect') or '/my/control-obra'
-        if not redirect_url.startswith('/my/control-obra'):
-            redirect_url = '/my/control-obra'
-        return request.redirect(redirect_url)
 
     @http.route(['/my/control-obra/<int:task_id>/<string:section>/<int:record_id>'],
                 type='http', auth='user', website=True)

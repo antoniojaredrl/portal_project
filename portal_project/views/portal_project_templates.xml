@@ -272,6 +272,32 @@
                                 </a>
                             </div>
                             <div class="col">
+                                <div
+                                    class="card h-100 portal-project-panel border-0 kpi-card portal-project-kpi-help"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    data-bs-container="body"
+                                    title="Indica el total de proyectos distintos asociados a las órdenes de trabajo visibles, respetando el periodo, planta y supervisores seleccionados.">
+                                    <div
+                                        class="card-body p-3 d-flex justify-content-between align-items-center">
+                                        <div class="min-w-0">
+                                            <span
+                                                class="text-uppercase text-muted fw-bold small text-truncate d-block">Total
+                                                de proyectos</span>
+                                            <h3 class="fw-bold my-1 text-secondary">
+                                                <t t-out="dashboard_data['total_projects']" />
+                                            </h3>
+                                            <span class="small text-muted">Proyectos visibles</span>
+                                        </div>
+                                        <div
+                                            class="kpi-icon-wrapper text-secondary p-2 rounded-circle d-flex align-items-center justify-content-center"
+                                            style="width: 44px; height: 44px; background-color: rgba(108, 117, 125, 0.1);">
+                                            <i class="fa fa-folder-open fa-lg"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
                                 <a
                                     t-att-href="dashboard_kpi_urls['active']"
                                     class="text-decoration-none h-100 d-block portal-project-kpi-help"
@@ -415,6 +441,26 @@
                                                 class="kpi-icon-wrapper bg-danger-soft text-danger p-2 rounded-circle d-flex align-items-center justify-content-center"
                                                 style="width: 44px; height: 44px; background-color: rgba(220, 53, 69, 0.1);">
                                                 <i class="fa fa-dollar fa-lg"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div t-if="dashboard_data['show_cost_approval_kpi']" class="col">
+                                <a t-att-href="dashboard_kpi_urls['cost_approvals']"
+                                    class="text-decoration-none h-100 d-block portal-project-kpi-help"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" data-bs-container="body"
+                                    title="Muestra los cortes de costos que esperan tu visto bueno.">
+                                    <div class="card h-100 portal-project-panel border-0 kpi-card" style="cursor: pointer;">
+                                        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                                            <div class="min-w-0">
+                                                <span class="text-uppercase text-muted fw-bold small text-truncate d-block">Pendientes de aprobación</span>
+                                                <h3 class="fw-bold my-1 text-danger"><t t-out="dashboard_data['pending_cost_approval_count']" /></h3>
+                                                <span class="small text-primary">Revisar pendientes</span>
+                                            </div>
+                                            <div class="kpi-icon-wrapper text-danger p-2 rounded-circle d-flex align-items-center justify-content-center"
+                                                style="width: 44px; height: 44px; background-color: rgba(220, 53, 69, 0.1);">
+                                                <i class="fa fa-check-square-o fa-lg"></i>
                                             </div>
                                         </div>
                                     </div>
@@ -2293,6 +2339,9 @@
                                                     </a>
                                                 </th>
                                                 <th class="text-center">
+                                                    Estado de aprobación
+                                                </th>
+                                                <th class="text-center">
                                                     <a class="portal-project-sort-link"
                                                         t-attf-href="/my/control-obra/tareas?{{ keep_query('search', 'search_in', 'date_from', 'date_to', 'supervisor_id', 'client_supervisor_id', 'project_id', 'plant_id', 'sale_order_id', 'invoice_status', 'groupby', 'page_size', 'progress_from', 'progress_to', 'view', sortby='invoice_status', sort_order=next_sort_orders['invoice_status']) }}">
                                                         Estado de factura <span
@@ -2340,6 +2389,24 @@
                                                             t-out="work_task.supervisor_cliente.name if 'supervisor_cliente' in work_task._fields and work_task.supervisor_cliente else '-'" />
                                                     </td>
                                                     <td class="text-center">
+                                                        <a t-if="row['cost_approval']"
+                                                            t-attf-href="/my/control-obra/#{work_task.id}?tab=cost-approval#cost-cut-heading-#{row['cost_approval'].id}"
+                                                            class="text-decoration-none">
+                                                            <span t-attf-class="portal-project-badge
+                                                                #{'bg-success text-white' if row['cost_approval_state'] == 'approved'
+                                                                else 'bg-danger text-white' if row['cost_approval_state'] == 'rejected'
+                                                                else 'bg-warning text-dark' if row['cost_approval_state'] in ('supervisor_review', 'purchase_review')
+                                                                else 'portal-project-badge-soft'}">
+                                                                <t t-out="row['cost_approval_state_text']"/>
+                                                            </span>
+                                                        </a>
+
+                                                        <span t-else=""
+                                                            class="portal-project-badge portal-project-badge-muted">
+                                                            Sin enviar
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">
                                                         <span t-if="work_task.sale_order_id"
                                                             class="portal-project-badge portal-project-badge-soft">
                                                             <t t-out="row['invoice_status_text']" />
@@ -2354,7 +2421,7 @@
                                             <t t-if="groupby != 'none'"
                                                 t-foreach="grouped_task_rows" t-as="group">
                                                 <tr class="portal-project-group-row">
-                                                    <td colspan="7" class="ps-4">
+                                                    <td colspan="8" class="ps-4">
                                                         <span class="portal-project-group-title">
                                                             <t t-out="group['title']" />
                                                         </span>
@@ -2407,6 +2474,24 @@
                                                                 t-out="work_task.supervisor_cliente.name if 'supervisor_cliente' in work_task._fields and work_task.supervisor_cliente else '-'" />
                                                         </td>
                                                         <td class="text-center">
+                                                            <a t-if="row['cost_approval']"
+                                                                t-attf-href="/my/control-obra/#{work_task.id}?tab=cost-approval#cost-cut-heading-#{row['cost_approval'].id}"
+                                                                class="text-decoration-none">
+                                                                <span t-attf-class="portal-project-badge
+                                                                    #{'bg-success text-white' if row['cost_approval_state'] == 'approved'
+                                                                    else 'bg-danger text-white' if row['cost_approval_state'] == 'rejected'
+                                                                    else 'bg-warning text-dark' if row['cost_approval_state'] in ('supervisor_review', 'purchase_review')
+                                                                    else 'portal-project-badge-soft'}">
+                                                                    <t t-out="row['cost_approval_state_text']"/>
+                                                                </span>
+                                                            </a>
+
+                                                            <span t-else=""
+                                                                class="portal-project-badge portal-project-badge-muted">
+                                                                Sin enviar
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center">
                                                             <span t-if="work_task.sale_order_id"
                                                                 class="portal-project-badge portal-project-badge-soft">
                                                                 <t
@@ -2422,7 +2507,7 @@
                                                 </t>
                                             </t>
                                             <tr t-if="not task_rows">
-                                                <td colspan="7" class="text-center py-4 text-muted">No
+                                                <td colspan="8" class="text-center py-4 text-muted">No
                                                     hay trabajos visibles para su cuenta.</td>
                                             </tr>
                                         </tbody>
@@ -3040,6 +3125,37 @@
                                 </div>
                             </div>
                             <div class="d-flex align-items-center flex-wrap gap-2">
+                                <div class="btn-group" role="group" aria-label="Navegación entre trabajos">
+                                    <a t-if="task_navigation['previous_url']"
+                                        t-att-href="task_navigation['previous_url']"
+                                        class="btn btn-outline-primary btn-sm"
+                                        title="Trabajo anterior">
+                                        <i class="fa fa-chevron-left"></i>
+                                        <span class="d-none d-md-inline ms-1">Anterior</span>
+                                    </a>
+                                    <button t-else="" type="button"
+                                        class="btn btn-outline-primary btn-sm" disabled="disabled">
+                                        <i class="fa fa-chevron-left"></i>
+                                        <span class="d-none d-md-inline ms-1">Anterior</span>
+                                    </button>
+                                    <span t-if="task_navigation['position']"
+                                        class="btn btn-outline-secondary btn-sm disabled">
+                                        <t t-out="task_navigation['position']" /> / <t
+                                            t-out="task_navigation['total']" />
+                                    </span>
+                                    <a t-if="task_navigation['next_url']"
+                                        t-att-href="task_navigation['next_url']"
+                                        class="btn btn-outline-primary btn-sm"
+                                        title="Trabajo siguiente">
+                                        <span class="d-none d-md-inline me-1">Siguiente</span>
+                                        <i class="fa fa-chevron-right"></i>
+                                    </a>
+                                    <button t-else="" type="button"
+                                        class="btn btn-outline-primary btn-sm" disabled="disabled">
+                                        <span class="d-none d-md-inline me-1">Siguiente</span>
+                                        <i class="fa fa-chevron-right"></i>
+                                    </button>
+                                </div>
                                 <a t-att-href="task_back_url or '/my/control-obra/tareas'"
                                     class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
                                     <i class="fa fa-list"></i>
@@ -3051,157 +3167,10 @@
                         </div>
                     </div>
                     <div class="card-body p-4">
-                        <div t-if="show_financial_summary" class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <div class="portal-project-summary p-3 h-100">
-                                    <small class="text-muted d-block">Producción entregada</small>
-                                    <strong class="fs-5">
-                                        <t t-out="delivered_total_text" />
-                                    </strong>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="portal-project-summary p-3 h-100">
-                                    <small class="text-muted d-block">Costo antes de Fee</small>
-                                    <strong class="fs-5">
-                                        <t t-out="total_cost_text" />
-                                    </strong>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div
-                                    class="portal-project-summary portal-project-summary-strong p-3 h-100">
-                                    <small class="text-muted d-block">Total estimado a cobrar</small>
-                                    <strong class="fs-5">
-                                        <t t-out="grand_total_text" />
-                                    </strong>
-                                    <div class="small text-muted mt-1"> Base <t
-                                            t-out="billable_base_total_text" />; utilidad sobre <t
-                                            t-out="profit_base_total_text" /> al <t
-                                            t-out="'%.2f' % profit_percentage" />% (<t
-                                            t-out="profit_amount_text" />) </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <form t-if="show_financial_summary" action="/my/control-obra/profit"
-                            method="post" class="portal-project-panel p-3 mb-4">
-                            <input type="hidden" name="csrf_token"
-                                t-att-value="request.csrf_token()" />
-                            <input type="hidden" name="redirect"
-                                t-attf-value="/my/control-obra/#{task.id}" />
-                            <div class="row g-2 align-items-end">
-                                <div class="col-md-8">
-                                    <label for="profit_percentage"
-                                        class="form-label small text-muted mb-1">Porcentaje extra de
-                                        ganancia</label>
-                                    <div class="input-group">
-                                        <input id="profit_percentage" name="profit_percentage"
-                                            type="number" min="0" max="100" step="0.01"
-                                            class="form-control"
-                                            t-att-value="'%.2f' % profit_percentage" />
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 d-grid">
-                                    <button type="submit" class="btn portal-project-btn">Actualizar
-                                        porcentaje</button>
-                                </div>
-                            </div>
-                        </form>
-
-                        <div t-if="show_financial_summary" class="portal-project-panel p-3 mb-4">
-                            <div
-                                class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <button class="btn btn-link p-0 portal-project-collapse-toggle"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#portal-project-financial-summary"
-                                    aria-expanded="false"
-                                    aria-controls="portal-project-financial-summary">
-                                    Resumen financiero
-                                </button>
-                                <div class="d-flex gap-2">
-                                    <a t-attf-href="/my/control-obra/#{task.id}/export.pdf"
-                                        class="btn btn-outline-secondary btn-sm">Exportar PDF</a>
-                                    <a t-attf-href="/my/control-obra/#{task.id}/export.csv"
-                                        class="btn btn-outline-secondary btn-sm">Exportar CSV</a>
-                                </div>
-                            </div>
-                            <div id="portal-project-financial-summary" class="collapse mt-3">
-                                <div class="table-responsive">
-                                    <table
-                                        class="table align-middle mb-0 portal-project-table portal-project-detail-table">
-                                        <tbody>
-                                            <tr>
-                                                <th>Producción entregada</th>
-                                                <td class="text-end">
-                                                    <t t-out="delivered_total_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Gastos</th>
-                                                <td class="text-end">
-                                                    <t t-out="expense_total_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Compras</th>
-                                                <td class="text-end">
-                                                    <t t-out="purchase_total_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Material consumido de almacén</th>
-                                                <td class="text-end">
-                                                    <t t-out="stock_total_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Mano de obra</th>
-                                                <td class="text-end">
-                                                    <t t-out="labor_total_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Costo antes de Fee</th>
-                                                <td class="text-end fw-bold">
-                                                    <t t-out="total_cost_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Base cobrable</th>
-                                                <td class="text-end">
-                                                    <t t-out="billable_base_total_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Base para utilidad</th>
-                                                <td class="text-end">
-                                                    <t t-out="profit_base_total_text" />
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Utilidad</th>
-                                                <td class="text-end"><t
-                                                        t-out="'%.2f' % profit_percentage" />% (<t
-                                                        t-out="profit_amount_text" />)</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Total estimado a cobrar</th>
-                                                <td class="text-end fw-bold">
-                                                    <t t-out="grand_total_text" />
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
                         <!-- Charts Section for Task Detail -->
                         <ul class="nav nav-tabs portal-project-tabs" role="tablist">
                             <li class="nav-item">
-                                <button class="nav-link active fw-bold" data-bs-toggle="tab"
+                                <button t-attf-class="nav-link fw-bold #{'active' if active_task_tab == 'charts' else ''}" data-bs-toggle="tab"
                                     data-bs-target="#task-section-charts" type="button" role="tab">Indicadores</button>
                             </li>
                             <li class="nav-item">
@@ -3217,13 +3186,26 @@
                                     data-bs-target="#task-section-approval" type="button" role="tab">VoBo</button>
                             </li>
                             <li class="nav-item">
+                                <button t-attf-class="nav-link fw-bold #{'active' if active_task_tab == 'cost-approval' else ''}" data-bs-toggle="tab"
+                                    data-bs-target="#task-section-cost-approval" type="button" role="tab">VoBo Costos</button>
+                            </li>
+                            <li class="nav-item">
                                 <button class="nav-link fw-bold" data-bs-toggle="tab"
                                     data-bs-target="#task-section-conversation" type="button" role="tab">Bitácora</button>
                             </li>
                         </ul>
 
                         <div class="tab-content p-4 portal-project-tab-content mb-4">
-                            <div class="tab-pane fade show active" id="task-section-charts"
+                            <script t-if="active_task_tab == 'cost-approval'">
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    var heading = window.location.hash ? document.querySelector(window.location.hash) : null;
+                                    var cutButton = heading ? heading.querySelector('.accordion-button') : null;
+                                    if (cutButton &amp;&amp; cutButton.classList.contains('collapsed')) {
+                                        cutButton.click();
+                                    }
+                                });
+                            </script>
+                            <div t-attf-class="tab-pane fade #{'show active' if active_task_tab == 'charts' else ''}" id="task-section-charts"
                                 role="tabpanel">
                                 <div class="portal-project-panel p-3 mb-0">
                             <h4 class="h5 mb-3 portal-project-title">Evolución e Indicadores del
@@ -3250,7 +3232,10 @@
                                     </div>
                                 </div>
                                 <div class="col">
-                                    <div class="card h-100 portal-project-panel border-0 kpi-card">
+                                    <a t-att-href="task_cost_detail_url"
+                                        class="card h-100 portal-project-panel border-0 kpi-card text-decoration-none portal-project-kpi-help"
+                                        style="cursor: pointer;"
+                                        title="Ver desglose del costo por categoría PU">
                                         <div
                                             class="card-body p-3 d-flex justify-content-between align-items-center">
                                             <div class="min-w-0">
@@ -3260,6 +3245,7 @@
                                                 <h4 class="fw-bold my-1 text-danger text-truncate">
                                                     <t t-out="task_kpis['costo_real_text']" />
                                                 </h4>
+                                                <span class="small text-primary">Ver más detalles</span>
                                             </div>
                                             <div
                                                 class="kpi-icon-wrapper text-danger p-2 rounded-circle d-flex align-items-center justify-content-center"
@@ -3267,7 +3253,7 @@
                                                 <i class="fa fa-dollar fa-lg"></i>
                                             </div>
                                         </div>
-                                    </div>
+                                    </a>
                                 </div>
                                 <div class="col">
                                     <div class="card h-100 portal-project-panel border-0 kpi-card">
@@ -4004,7 +3990,7 @@
                                                 <th class="text-center">Sup. Interno</th>
                                                 <th class="text-center">Sup. Cliente</th>
                                                 <th class="text-center">Avance Uni.</th>
-                                                <th class="text-end">Valor</th>
+                                                <th class="text-end">Porcentaje entregado</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -4041,7 +4027,7 @@
                                                         <t t-out="advance.unit_progress or 0" />
                                                     </td>
                                                     <td class="text-end">
-                                                        <t t-out="format_amount(advance.sale_current, advance.currency_id or currency)" />
+                                                        <t t-out="('{:.2f}'.format(advance.actual_progress or 0.0) + '%') if 'actual_progress' in advance._fields else '0.00%'" />
                                                     </td>
                                                 </tr>
                                             </t>
@@ -4284,6 +4270,120 @@
                             </div>
                         </div>
 
+                            </div>
+
+                            <div t-attf-class="tab-pane fade #{'show active' if active_task_tab == 'cost-approval' else ''}" id="task-section-cost-approval" role="tabpanel">
+                                <section>
+                                    <div class="mb-3">
+                                        <h4 class="h5 mb-1 portal-project-title">Aprobación de costos</h4>
+                                        <div class="small text-muted">Cortes económicos enviados a Supervisor Cliente y Compras Cliente.</div>
+                                    </div>
+                                    <div t-if="not cost_approval_values" class="text-center text-muted py-4">
+                                        Todavía no se ha enviado ningún corte de costos para aprobación.
+                                    </div>
+                                    <div class="accordion accordion-flush border-top" id="portal-cost-approval-accordion">
+                                        <div t-foreach="cost_approval_values" t-as="cut"
+                                            class="accordion-item">
+                                            <h2 class="accordion-header" t-attf-id="cost-cut-heading-#{cut['approval'].id}">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                                    t-attf-data-bs-target="#cost-cut-body-#{cut['approval'].id}" aria-expanded="false">
+                                                    <span class="d-flex justify-content-between align-items-center w-100 me-3 gap-3">
+                                                        <span>
+                                                            <strong class="d-block"><t t-out="cut['approval'].name" /></strong>
+                                                            <small class="text-muted"><t t-out="cut['state_label']" /></small>
+                                                        </span>
+                                                        <strong><t t-out="cut['total_amount_text']" /></strong>
+                                                    </span>
+                                                </button>
+                                            </h2>
+                                            <div t-attf-id="cost-cut-body-#{cut['approval'].id}" class="accordion-collapse collapse"
+                                                data-bs-parent="#portal-cost-approval-accordion">
+                                                <div class="accordion-body px-2 px-md-3">
+                                                    <div class="row g-3 mb-3">
+                                                        <div class="col-md-4"><small class="text-muted d-block">Costo antes de Fee</small><strong><t t-out="cut['amount_before_fee_text']" /></strong></div>
+                                                        <div class="col-md-4"><small class="text-muted d-block">Fee (<t t-out="cut['approval'].fee_percent" />%)</small><strong><t t-out="cut['fee_amount_text']" /></strong></div>
+                                                        <div class="col-md-4"><small class="text-muted d-block">Total presentado</small><strong><t t-out="cut['total_amount_text']" /></strong></div>
+                                                    </div>
+                                                    <div class="accordion accordion-flush mb-3 border-top border-bottom" t-attf-id="cost-cut-categories-#{cut['approval'].id}">
+                                                        <div t-foreach="cut['categories']" t-as="category" class="accordion-item border-0 border-bottom">
+                                                            <h3 class="accordion-header">
+                                                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse"
+                                                                    t-attf-data-bs-target="#cost-cut-category-#{cut['approval'].id}-#{category['key']}">
+                                                                    <span class="d-flex justify-content-between w-100 me-3"><span><t t-out="category['label']" /></span><strong><t t-out="category['amount_text']" /></strong></span>
+                                                                </button>
+                                                            </h3>
+                                                            <div t-attf-id="cost-cut-category-#{cut['approval'].id}-#{category['key']}" class="accordion-collapse collapse"
+                                                                t-attf-data-bs-parent="#cost-cut-categories-#{cut['approval'].id}">
+                                                                <div class="table-responsive"><table class="table table-sm mb-0">
+                                                                    <thead><tr><th>Descripción</th><th>Unidad</th><th class="text-end">Cantidad</th><th class="text-end">P. unitario</th><th class="text-end">Total</th></tr></thead>
+                                                                    <tbody>
+                                                                        <tr t-if="not category['lines']"><td colspan="5" class="text-center text-muted">Sin conceptos</td></tr>
+                                                                        <tr t-foreach="category['lines']" t-as="line">
+                                                                            <td><t t-out="line.description" /></td><td><t t-out="line.unit" /></td>
+                                                                            <td class="text-end"><t t-out="line.quantity" /></td>
+                                                                            <td class="text-end"><t t-out="format_amount(line.unit_amount, cut['approval'].currency_id)" /></td>
+                                                                            <td class="text-end fw-bold"><t t-out="format_amount(line.amount, cut['approval'].currency_id)" /></td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div t-if="cut['approval'].state == 'approved'" class="alert alert-success mb-0">
+                                                        <div class="fw-bold mb-2"><i class="fa fa-check-circle me-1"></i> Corte aprobado</div>
+                                                        <div class="row g-2 small">
+                                                            <div class="col-12 col-md-6">
+                                                                <span class="d-block text-muted">Supervisor Cliente</span>
+                                                                <strong><t t-out="cut['approval'].supervisor_partner_id.display_name or '-'" /></strong>
+                                                                <span class="d-block">
+                                                                    <t t-out="cut['approval'].supervisor_approved_date"
+                                                                        t-options='{"widget": "datetime"}' />
+                                                                </span>
+                                                            </div>
+                                                            <div class="col-12 col-md-6">
+                                                                <span class="d-block text-muted">Compras Cliente</span>
+                                                                <strong><t t-out="cut['approval'].purchase_partner_id.display_name or '-'" /></strong>
+                                                                <span class="d-block">
+                                                                    <t t-out="cut['approval'].purchase_approved_date"
+                                                                        t-options='{"widget": "datetime"}' />
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div t-if="cut['approval'].state == 'purchase_review' and cut['approval'].supervisor_partner_id"
+                                                        class="alert alert-info mb-0">
+                                                        <strong>Supervisor Cliente:</strong>
+                                                        <t t-out="cut['approval'].supervisor_partner_id.display_name" /> —
+                                                        <t t-out="cut['approval'].supervisor_approved_date"
+                                                            t-options='{"widget": "datetime"}' />
+                                                        <span class="d-block small mt-1">Pendiente de aprobación por Compras Cliente.</span>
+                                                    </div>
+                                                    <div t-if="cut['approval'].state == 'rejected'" class="alert alert-danger mb-0">
+                                                        <strong>Rechazado por <t t-out="cut['approval'].rejected_by_id.display_name or '-'" /></strong>
+                                                        <span> — <t t-out="cut['approval'].rejected_date" t-options='{"widget": "datetime"}' /></span>
+                                                        <span class="d-block mt-1"><t t-out="cut['approval'].rejection_note" /></span>
+                                                    </div>
+                                                    <div t-if="cut['can_approve']" class="row g-2 pt-2">
+                                                        <div class="col-12 col-lg-6">
+                                                            <form t-att-action="cut['approve_url']" method="post">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" />
+                                                                <textarea name="note" class="form-control form-control-sm mb-2" rows="2" placeholder="Comentario opcional"></textarea>
+                                                                <button type="submit" class="btn btn-success btn-sm w-100"><i class="fa fa-check me-1"></i> Dar visto bueno</button>
+                                                            </form>
+                                                        </div>
+                                                        <div class="col-12 col-lg-6">
+                                                            <form t-att-action="cut['reject_url']" method="post">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" />
+                                                                <textarea name="note" class="form-control form-control-sm mb-2" rows="2" required="required" placeholder="Motivo obligatorio del rechazo"></textarea>
+                                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100"><i class="fa fa-times me-1"></i> Rechazar corte</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
 
                             <div class="tab-pane fade" id="task-section-approval" role="tabpanel">
@@ -4606,6 +4706,236 @@
         </script>
     </template>
 
+    <template id="portal_pending_cost_approvals" name="Aprobaciones de costos pendientes">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4 mb-5 portal-project portal-project-list">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                        <div class="text-muted small">Control de Obra</div>
+                        <h3 class="portal-project-title mb-1">Pendientes de aprobación</h3>
+                        <div class="text-muted">Cortes de costos que requieren tu visto bueno.</div>
+                    </div>
+                    <a href="/my/control-obra" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa fa-arrow-left me-1"></i> Volver al dashboard
+                    </a>
+                </div>
+                <div t-if="not approval_rows" class="portal-project-panel text-center py-5">
+                    <i class="fa fa-check-circle text-success fa-2x mb-2"></i>
+                    <div class="fw-bold">No tienes aprobaciones pendientes</div>
+                </div>
+                <div t-if="approval_rows" class="card portal-project-card border-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 portal-project-table">
+                            <thead><tr>
+                                <th class="ps-4">Tarea / OT</th><th>Proyecto</th><th>Etapa</th>
+                                <th>Solicitado</th><th class="text-center">Días pendiente</th>
+                                <th class="text-end">Total</th><th class="text-end pe-4"></th>
+                            </tr></thead>
+                            <tbody>
+                                <tr t-foreach="approval_rows" t-as="row">
+                                    <td class="ps-4 fw-bold"><t t-out="row['approval'].task_id.name" /></td>
+                                    <td><t t-out="row['approval'].task_id.project_id.name or '-'" /></td>
+                                    <td><span class="portal-project-badge portal-project-badge-soft"><t t-out="row['state_label']" /></span></td>
+                                    <td><t t-out="row['approval'].requested_date" t-options='{"widget": "datetime"}' /></td>
+                                    <td class="text-center"><span t-attf-class="fw-bold #{'text-danger' if row['pending_days'] &gt; 3 else ''}"><t t-out="row['pending_days']" /></span></td>
+                                    <td class="text-end fw-bold"><t t-out="row['total_text']" /></td>
+                                    <td class="text-end pe-4"><a t-att-href="row['url']" class="btn btn-primary btn-sm">Revisar</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_main_cost_breakdown" name="Desglose general de costo antes de Fee">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4 mb-5 portal-project portal-project-list">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                        <div class="text-muted small">Control de Obra</div>
+                        <h3 class="portal-project-title mb-1">Costo antes de Fee</h3>
+                        <div class="text-muted">Desglose por tarea, categoría PU y concepto</div>
+                    </div>
+                    <a href="/my/control-obra"
+                        class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+                        <i class="fa fa-arrow-left"></i> Volver al dashboard
+                    </a>
+                </div>
+
+                <div class="portal-project-panel p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="fw-bold d-block">Total general</span>
+                        <span class="small text-muted"><t t-out="len(task_breakdowns)" /> tareas con costos</span>
+                    </div>
+                    <strong class="fs-4"><t t-out="total_amount_text" /></strong>
+                </div>
+
+                <div t-if="not task_breakdowns" class="portal-project-panel text-center text-muted py-5">
+                    No hay costos registrados para los filtros seleccionados.
+                </div>
+                <div t-if="task_breakdowns" class="accordion" id="main-cost-task-accordion">
+                    <div t-foreach="task_breakdowns" t-as="task_item"
+                        class="accordion-item portal-project-card border-0 mb-3 overflow-hidden">
+                        <h2 class="accordion-header"
+                            t-attf-id="main-cost-task-heading-#{task_item['task'].id}">
+                            <button class="accordion-button collapsed fw-bold" type="button"
+                                data-bs-toggle="collapse"
+                                t-attf-data-bs-target="#main-cost-task-body-#{task_item['task'].id}"
+                                aria-expanded="false"
+                                t-attf-aria-controls="main-cost-task-body-#{task_item['task'].id}">
+                                <span class="d-flex justify-content-between align-items-center w-100 me-3 gap-3">
+                                    <span>
+                                        <span class="d-block"><t t-out="task_item['task'].name" /></span>
+                                        <small class="text-muted fw-normal"><t t-out="task_item['task'].project_id.name or '-'" /></small>
+                                    </span>
+                                    <strong><t t-out="task_item['breakdown']['total_text']" /></strong>
+                                </span>
+                            </button>
+                        </h2>
+                        <div t-attf-id="main-cost-task-body-#{task_item['task'].id}"
+                            class="accordion-collapse collapse"
+                            t-attf-aria-labelledby="main-cost-task-heading-#{task_item['task'].id}"
+                            data-bs-parent="#main-cost-task-accordion">
+                            <div class="accordion-body p-3">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <a t-att-href="task_item['detail_url']" class="btn btn-link btn-sm text-decoration-none">
+                                        Abrir tarea <i class="fa fa-external-link ms-1"></i>
+                                    </a>
+                                </div>
+                                <div class="accordion"
+                                    t-attf-id="main-cost-category-accordion-#{task_item['task'].id}">
+                                    <div t-foreach="task_item['breakdown']['categories']" t-as="category"
+                                        class="accordion-item">
+                                        <h3 class="accordion-header"
+                                            t-attf-id="main-cost-category-heading-#{task_item['task'].id}-#{category['key']}">
+                                            <button class="accordion-button collapsed fw-bold" type="button"
+                                                data-bs-toggle="collapse"
+                                                t-attf-data-bs-target="#main-cost-category-body-#{task_item['task'].id}-#{category['key']}"
+                                                aria-expanded="false"
+                                                t-attf-aria-controls="main-cost-category-body-#{task_item['task'].id}-#{category['key']}">
+                                                <span class="d-flex justify-content-between align-items-center w-100 me-3 gap-3">
+                                                    <span><t t-out="category['label']" /></span>
+                                                    <strong><t t-out="category['amount_text']" /></strong>
+                                                </span>
+                                            </button>
+                                        </h3>
+                                        <div t-attf-id="main-cost-category-body-#{task_item['task'].id}-#{category['key']}"
+                                            class="accordion-collapse collapse"
+                                            t-attf-aria-labelledby="main-cost-category-heading-#{task_item['task'].id}-#{category['key']}"
+                                            t-attf-data-bs-parent="#main-cost-category-accordion-#{task_item['task'].id}">
+                                            <div class="accordion-body p-0">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover align-middle mb-0 portal-project-table">
+                                                        <thead><tr>
+                                                            <th class="ps-3">Descripción</th>
+                                                            <th>Unidad</th>
+                                                            <th class="text-end">Cantidad</th>
+                                                            <th class="text-end">Total unitario</th>
+                                                            <th class="text-end pe-3">Total</th>
+                                                        </tr></thead>
+                                                        <tbody>
+                                                            <tr t-if="not category['rows']">
+                                                                <td colspan="5" class="text-center text-muted py-3">No hay costos registrados en esta categoría.</td>
+                                                            </tr>
+                                                            <tr t-foreach="category['rows']" t-as="line">
+                                                                <td class="ps-3"><t t-out="line['description']" /></td>
+                                                                <td><t t-out="line['unit']" /></td>
+                                                                <td class="text-end"><t t-out="line['quantity']" /></td>
+                                                                <td class="text-end"><t t-out="line['unit_amount_text']" /></td>
+                                                                <td class="text-end pe-3 fw-bold"><t t-out="line['amount_text']" /></td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_task_cost_breakdown" name="Desglose de costo antes de Fee">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4 mb-5 portal-project portal-project-list">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                        <div class="text-muted small">Costo antes de Fee</div>
+                        <h3 class="portal-project-title mb-1"><t t-out="task.name" /></h3>
+                        <div class="text-muted"><t t-out="task.project_id.name or '-'" /></div>
+                    </div>
+                    <a t-att-href="task_detail_url"
+                        class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+                        <i class="fa fa-arrow-left"></i> Volver a la tarea
+                    </a>
+                </div>
+
+                <div class="portal-project-panel p-3 mb-4 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Total de la tarea</span>
+                    <strong class="fs-4"><t t-out="cost_values['total_text']" /></strong>
+                </div>
+
+                <h4 class="portal-project-title mb-3">Categorías PU</h4>
+                <div class="accordion portal-project-panel overflow-hidden"
+                    id="task-cost-independent-accordion">
+                    <div t-foreach="cost_values['categories']" t-as="category"
+                        class="accordion-item border-0 border-bottom">
+                        <h2 class="accordion-header"
+                            t-attf-id="cost-category-heading-#{category['key']}">
+                            <button
+                                t-attf-class="accordion-button fw-bold #{'' if selected_category and selected_category['key'] == category['key'] else 'collapsed'}"
+                                type="button" data-bs-toggle="collapse"
+                                t-attf-data-bs-target="#cost-category-body-#{category['key']}"
+                                t-att-aria-expanded="'true' if selected_category and selected_category['key'] == category['key'] else 'false'"
+                                t-attf-aria-controls="cost-category-body-#{category['key']}">
+                                <span class="d-flex justify-content-between align-items-center w-100 me-3 gap-3">
+                                    <span><t t-out="category['label']" /></span>
+                                    <strong><t t-out="category['amount_text']" /></strong>
+                                </span>
+                            </button>
+                        </h2>
+                        <div t-attf-id="cost-category-body-#{category['key']}"
+                            t-attf-class="accordion-collapse collapse #{'show' if selected_category and selected_category['key'] == category['key'] else ''}"
+                            t-attf-aria-labelledby="cost-category-heading-#{category['key']}"
+                            data-bs-parent="#task-cost-independent-accordion">
+                            <div class="accordion-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0 portal-project-table">
+                                        <thead><tr>
+                                            <th class="ps-4">Descripción</th>
+                                            <th>Unidad</th>
+                                            <th class="text-end">Cantidad</th>
+                                            <th class="text-end">Total unitario</th>
+                                            <th class="text-end pe-4">Total</th>
+                                        </tr></thead>
+                                        <tbody>
+                                            <tr t-if="not category['rows']">
+                                                <td colspan="5" class="text-center text-muted py-4">No hay costos registrados en esta categoría.</td>
+                                            </tr>
+                                            <tr t-foreach="category['rows']" t-as="line">
+                                                <td class="ps-4"><t t-out="line['description']" /></td>
+                                                <td><t t-out="line['unit']" /></td>
+                                                <td class="text-end"><t t-out="line['quantity']" /></td>
+                                                <td class="text-end"><t t-out="line['unit_amount_text']" /></td>
+                                                <td class="text-end pe-4 fw-bold"><t t-out="line['amount_text']" /></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
     <template id="portal_record_layout" name="Control de Obra Record Layout">
         <t t-call="portal.portal_layout">
             <div class="container mt-4 mb-5 portal-project portal-project-record">
@@ -4697,7 +5027,7 @@
                                 <select id="priority" name="priority" class="form-select"
                                     style="border-radius: 6px;">
                                     <option value="">Seleccione la prioridad</option>
-                                    <option value="0">Normal</option>
+                                    <option value="0" selected="selected">Normal</option>
                                     <option value="1">Media</option>
                                     <option value="2">Alta</option>
                                     <option value="3">Urgente</option>
